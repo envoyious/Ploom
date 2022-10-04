@@ -74,7 +74,9 @@ def main():
     graphics.set_alpha(None)
     target = pygame.Surface((VIEW_WIDTH, VIEW_HEIGHT))
 
-    top_view = pygame.Surface((99, 109))
+    top_view = pygame.Surface((98, 109))
+    transformed_view = pygame.Surface((98, 109))
+    world_view = pygame.Surface((98, 109))
 
     # Initialise objects
     player = Player(50, 50, 0)
@@ -92,9 +94,11 @@ def main():
 
         # Rendering
         graphics.fill(pygame.Color("black"))        
-        target.fill(CLEAR_COLOR)
+        target.fill("dark blue")
+        top_view.fill(CLEAR_COLOR)
+        transformed_view.fill(CLEAR_COLOR)
 
-        pygame.draw.rect(top_view, pygame.Color("blue"), pygame.Rect(0, 0, 99, 109), 1)
+        #region Top down view
 
         # Draw the wall
         pygame.draw.line(top_view, pygame.Color("yellow"), (wall.x1, wall.y1), (wall.x2, wall.y2))
@@ -103,8 +107,51 @@ def main():
         pygame.draw.line(top_view, pygame.Color("red"), (player.x, player.y), (int(math.cos(player.angle) * 5 + player.x), int(math.sin(player.angle) * 5 + player.y)))
         top_view.set_at((int(player.x), int(player.y)), pygame.Color("green"))
 
+        pygame.draw.rect(top_view, pygame.Color("blue"), pygame.Rect(0, 0, 98, 109), 1)
+
         # Draw the top down view
-        target.blit(top_view, (4, 40))
+        target.blit(top_view, (6, 40))
+
+        #endregion
+
+        #region Transformed view
+
+        # Transforming wall vertexes to be relative to the player
+        tx1 = wall.x1 - player.x
+        ty1 = wall.y1 - player.y
+        tx2 = wall.x2 - player.x
+        ty2 = wall.y2 - player.y
+
+        # Rotating the vertexes around the player
+        rx1 = tx1 * math.sin(player.angle) - ty1 * math.cos(player.angle)
+        rx2 = tx2 * math.sin(player.angle) - ty2 * math.cos(player.angle)
+        ry1 = tx1 * math.cos(player.angle) + ty1 * math.sin(player.angle)
+        ry2 = tx2 * math.cos(player.angle) + ty2 * math.sin(player.angle)
+
+        # Draw the wall
+        pygame.draw.line(transformed_view, pygame.Color("yellow"), (49 - rx1, 49 - ry1), (49 - rx2, 49 - ry2))
+
+        # Draw the player
+        pygame.draw.line(transformed_view, pygame.Color("red"), (49, 49), (49, 44))
+        transformed_view.set_at((49, 49), pygame.Color("green"))
+
+        pygame.draw.rect(transformed_view, pygame.Color("blue"), pygame.Rect(0, 0, 98, 109), 1)
+
+        # Draw the top down view
+        target.blit(transformed_view, (111, 40))
+
+        #endregion
+        
+        #region World view
+
+        pygame.draw.rect(world_view, pygame.Color("blue"), pygame.Rect(0, 0, 98, 109), 1)
+
+        # Draw the top down view
+        target.blit(world_view, (216, 40))
+
+        #endregion
+
+        #pygame.draw.rect(target, pygame.Color("blue"), pygame.Rect(0, 0, VIEW_WIDTH, VIEW_HEIGHT), 1)
 
         #region Render target resizing
 
