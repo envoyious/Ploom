@@ -94,9 +94,11 @@ def main():
 
         # Rendering
         graphics.fill(pygame.Color("black"))        
-        target.fill("dark blue")
+        target.fill("black")
+
         top_view.fill(CLEAR_COLOR)
         transformed_view.fill(CLEAR_COLOR)
+        world_view.fill(CLEAR_COLOR)
 
         #region Top down view
 
@@ -135,23 +137,36 @@ def main():
         pygame.draw.line(transformed_view, pygame.Color("red"), (49, 49), (49, 44))
         transformed_view.set_at((49, 49), pygame.Color("green"))
 
-        pygame.draw.rect(transformed_view, pygame.Color("blue"), pygame.Rect(0, 0, 98, 109), 1)
+        pygame.draw.rect(transformed_view, pygame.Color("green"), pygame.Rect(0, 0, 98, 109), 1)
 
-        # Draw the top down view
+        # Draw the transformed view
         target.blit(transformed_view, (111, 40))
 
         #endregion
         
         #region World view
 
-        pygame.draw.rect(world_view, pygame.Color("blue"), pygame.Rect(0, 0, 98, 109), 1)
+        # Transforming 3D coordinate onto the 2D plane
 
-        # Draw the top down view
+        x1 = -rx1 * 16 / ry1
+        y1a = -50 / ry1 
+        y1b = 50 / ry1
+
+        x2 = -rx2 * 16 / ry2
+        y2a = -50 / ry2
+        y2b = 50 / ry2
+
+        pygame.draw.line(world_view, pygame.Color("yellow"), (50 + x1, 50 + y1a), (50 + x2, 50 + y2a)) # Top line
+        pygame.draw.line(world_view, pygame.Color("yellow"), (50 + x1, 50 + y1b), (50 + x2, 50 + y2b)) # Bottom line
+        pygame.draw.line(world_view, pygame.Color("red"), (50 + x1, 50 + y1a), (50 + x1, 50 + y1b)) # Left
+        pygame.draw.line(world_view, pygame.Color("red"), (50 + x2, 50 + y2a), (50 + x2, 50 + y2b)) # Right
+
+        pygame.draw.rect(world_view, pygame.Color("cyan"), pygame.Rect(0, 0, 98, 109), 1)
+
+        # Draw the world view
         target.blit(world_view, (216, 40))
 
         #endregion
-
-        #pygame.draw.rect(target, pygame.Color("blue"), pygame.Rect(0, 0, VIEW_WIDTH, VIEW_HEIGHT), 1)
 
         #region Render target resizing
 
