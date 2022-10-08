@@ -15,8 +15,20 @@ VIEW_HEIGHT = 200
 CLEAR_COLOR = (pygame.Color("black"))
 
 FRAMERATE = 60
+HFOV = 85
+VFOV = 580
+
+COLOR = [ 
+        pygame.Color("yellow"), 
+        pygame.Color("pink"), 
+        pygame.Color("purple"), 
+        pygame.Color("orange") 
+        ]
 
 class Player:
+
+    SPEED = 0.3
+    ROTATION = 0.025
 
     def __init__(self, x, y, rotation):
         self.x = x
@@ -24,34 +36,39 @@ class Player:
         self.angle = rotation
 
     def update(self):
+        mouse_x = pygame.mouse.get_rel()[0]
         keys_down = pygame.key.get_pressed()
 
+        # Mouse rotation
+        if (pygame.event.get_grab()):
+            self.angle += mouse_x * 0.0035
+
         # Left and right rotation
-        if (keys_down[pygame.K_LEFT] and not(keys_down[pygame.K_LALT])):
-            self.angle -= 0.1
+        if (keys_down[pygame.K_LEFT]):
+            self.angle -= self.ROTATION
         
-        if (keys_down[pygame.K_RIGHT] and not(keys_down[pygame.K_LALT])):
-            self.angle += 0.1
+        if (keys_down[pygame.K_RIGHT]):
+            self.angle += self.ROTATION
 
         # Backwards and forwards movement
-        if (keys_down[pygame.K_UP]):
-            self.x += math.cos(self.angle)
-            self.y += math.sin(self.angle)
+        if (keys_down[pygame.K_UP] or keys_down[pygame.K_w]):
+            self.x += math.cos(self.angle) * self.SPEED
+            self.y += math.sin(self.angle) * self.SPEED
 
         
-        if (keys_down[pygame.K_DOWN]):
-            self.x -= math.cos(self.angle)
-            self.y -= math.sin(self.angle)
+        if (keys_down[pygame.K_DOWN] or keys_down[pygame.K_s]):
+            self.x -= math.cos(self.angle) * self.SPEED
+            self.y -= math.sin(self.angle) * self.SPEED
 
 
         # Strafe left and right
-        if ((keys_down[pygame.K_LEFT] and keys_down[pygame.K_LALT]) or keys_down[pygame.K_COMMA]):
-            self.x += math.sin(self.angle)
-            self.y -= math.cos(self.angle)
+        if (keys_down[pygame.K_a]):
+            self.x += math.sin(self.angle) * self.SPEED
+            self.y -= math.cos(self.angle) * self.SPEED
         
-        if ((keys_down[pygame.K_RIGHT] and keys_down[pygame.K_LALT]) or keys_down[pygame.K_PERIOD]):
-            self.x -= math.sin(self.angle)
-            self.y += math.cos(self.angle)
+        if (keys_down[pygame.K_d]):
+            self.x -= math.sin(self.angle) * self.SPEED
+            self.y += math.cos(self.angle) * self.SPEED
 
         self.__previous_key = keys_down
 
@@ -77,13 +94,16 @@ def main():
     # Inintialise pygame
     pygame.init()
     pygame.display.set_caption("DoomEngine")
+    pygame.mouse.set_visible(False)
     clock = pygame.time.Clock()
+
 
     # Set display mode
     flags = pygame.DOUBLEBUF | pygame.RESIZABLE
     graphics = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), flags)
     graphics.set_alpha(None)
     target = pygame.Surface((VIEW_WIDTH, VIEW_HEIGHT))
+    pygame.event.set_grab(True)
 
     top_view = pygame.Surface((98, 109))
     transformed_view = pygame.Surface((98, 109))
@@ -91,7 +111,12 @@ def main():
 
     # Initialise objects
     player = Player(49, 49, 0)
-    wall = Wall(70, 20, 70, 70)
+    walls = [
+            Wall(70, 20, 70, 70),
+            Wall(70, 70, 20, 70),
+            Wall(20, 70, 20, 20),
+            Wall(20, 20, 70, 20)
+            ]
 
     # Main loop
     is_running = True
@@ -99,6 +124,10 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 is_running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    pygame.mouse.set_visible(not(pygame.mouse.get_visible()))
+                    pygame.event.set_grab(not(pygame.event.get_grab()))
 
         # Updating
         player.update()
@@ -114,7 +143,8 @@ def main():
         #region Top down view
 
         # Draw the wall
-        pygame.draw.line(top_view, pygame.Color("yellow"), (wall.x1, wall.y1), (wall.x2, wall.y2))
+        for n, wall in enumerate(walls):
+            pygame.draw.line(top_view, pygame.Color(COLOR[n]), (wall.x1, wall.y1), (wall.x2, wall.y2))
 
         # Draw the player
         pygame.draw.line(top_view, pygame.Color("red"), (player.x, player.y), (int(math.cos(player.angle) * 5 + player.x), int(math.sin(player.angle) * 5 + player.y)))
@@ -129,20 +159,21 @@ def main():
 
         #region Transformed view
 
-        # Transforming wall vertexes to be relative to the player
-        tx1 = wall.x1 - player.x
-        ty1 = wall.y1 - player.y
-        tx2 = wall.x2 - player.x
-        ty2 = wall.y2 - player.y
+        for n, wall in enumerate(walls):
+            # Transforming wall vertexes to be relative to the player
+            tx1 = wall.x1 - player.x
+            ty1 = wall.y1 - player.y
+            tx2 = wall.x2 - player.x
+            ty2 = wall.y2 - player.y
 
-        # Rotating the vertexes around the player
-        rx1 = tx1 * math.sin(player.angle) - ty1 * math.cos(player.angle)
-        rx2 = tx2 * math.sin(player.angle) - ty2 * math.cos(player.angle)
-        ry1 = tx1 * math.cos(player.angle) + ty1 * math.sin(player.angle)
-        ry2 = tx2 * math.cos(player.angle) + ty2 * math.sin(player.angle)
+            # Rotating the vertexes around the player
+            rx1 = tx1 * math.sin(player.angle) - ty1 * math.cos(player.angle)
+            rx2 = tx2 * math.sin(player.angle) - ty2 * math.cos(player.angle)
+            ry1 = tx1 * math.cos(player.angle) + ty1 * math.sin(player.angle)
+            ry2 = tx2 * math.cos(player.angle) + ty2 * math.sin(player.angle)
 
-        # Draw the wall
-        pygame.draw.line(transformed_view, pygame.Color("yellow"), (49 - rx1, 49 - ry1), (49 - rx2, 49 - ry2))
+            # Draw the wall
+            pygame.draw.line(transformed_view, pygame.Color(COLOR[n]), (49 - rx1, 49 - ry1), (49 - rx2, 49 - ry2))
 
         # Draw the player
         pygame.draw.line(transformed_view, pygame.Color("red"), (49, 49), (49, 44))
@@ -156,47 +187,84 @@ def main():
         #endregion
         
         #region World view
-
-        # Clip the walls
-                
-        if ry1 > 0 or ry2 > 0:
-            nearz = 0.0001
-            farz = 5
-            nearside = 0.0001
-            farside = 1000
-
-            ix1, iy1 = intersect(rx1, ry1, rx2, ry2, -nearside, nearside, -farside, farz)
-            ix2, iy2 = intersect(rx1, ry1, rx2, ry2, nearside, nearside, farside, farz)
-
-            if ry1 <= 0:
-                if iy1 > 0:
-                    rx1 = ix1
-                    ry1 = iy1
-                else:
-                    rx1 = ix2
-                    ry1 = iy2
-            
-            if ry2 <= 0:
-                if iy1 > 0:
-                    rx2 = ix1
-                    ry2 = iy1
-                else:
-                    rx2 = ix2
-                    ry2 = iy2
         
-            # Transforming 3D coordinate onto the 2D plane
-            x1 = -rx1 * 16 / ry1
-            y1a = -49 / ry1 
-            y1b = 49 / ry1
+        for n, wall in enumerate(walls):
+            # Transforming wall vertexes to be relative to the player
+            tx1 = wall.x1 - player.x
+            ty1 = wall.y1 - player.y
+            tx2 = wall.x2 - player.x
+            ty2 = wall.y2 - player.y
 
-            x2 = -rx2 * 16 / ry2
-            y2a = -49 / ry2
-            y2b = 49 / ry2
+            # Rotating the vertexes around the player
+            rx1 = tx1 * math.sin(player.angle) - ty1 * math.cos(player.angle)
+            rx2 = tx2 * math.sin(player.angle) - ty2 * math.cos(player.angle)
+            ry1 = tx1 * math.cos(player.angle) + ty1 * math.sin(player.angle)
+            ry2 = tx2 * math.cos(player.angle) + ty2 * math.sin(player.angle)
 
-            pygame.draw.line(world_view, pygame.Color("yellow"), (49 + x1, 49 + y1a), (49 + x2, 49 + y2a)) # Top line
-            pygame.draw.line(world_view, pygame.Color("yellow"), (49 + x1, 49 + y1b), (49 + x2, 49 + y2b)) # Bottom line
-            pygame.draw.line(world_view, pygame.Color("red"), (49 + x1, 49 + y1a), (49 + x1, 49 + y1b)) # Left
-            pygame.draw.line(world_view, pygame.Color("red"), (49 + x2, 49 + y2a), (49 + x2, 49 + y2b)) # Right
+            # Clip the walls
+            if ry1 > 0 or ry2 > 0:
+                nearz = 0.0001
+                farz = 5
+                nearside = 0.0001
+                farside = 1000
+
+                ''''''
+                ix1, iy1 = intersect(rx1, ry1, rx2, ry2, -nearside, nearside, -farside, farz)
+                ix2, iy2 = intersect(rx1, ry1, rx2, ry2, nearside, nearside, farside, farz)
+
+                if ry1 <= 0:
+                    if iy1 > 0:
+                        rx1 = ix1
+                        ry1 = iy1
+                    else:
+                        rx1 = ix2
+                        ry1 = iy2
+                
+                if ry2 <= 0:
+                    if iy1 > 0:
+                        rx2 = ix1
+                        ry2 = iy1
+                    else:
+                        rx2 = ix2
+                        ry2 = iy2
+
+                # Transforming 3D coordinate onto the 2D plane
+                x1 = -rx1 * HFOV / ry1
+                y1a = -VFOV / ry1 
+                y1b = VFOV / ry1
+
+                x2 = -rx2 * HFOV / ry2
+                y2a = -VFOV / ry2
+                y2b = VFOV / ry2
+
+                # Clip segments off screen
+                dx1 = x1
+                dx2 = x2
+
+                if not(49 + x1 > 1):
+                    dx1 = 1 - 49
+                    
+                if not(49 + x1 < 96):
+                    dx1 = 97 - 49
+
+                if not(49 + x2 > 1):
+                    dx2 = 1 - 49
+                    
+                if not(49 + x2 < 96):
+                    dx2 = 97 - 49
+
+                for x in range(int(dx1), int(dx2)):
+                    ya = (x - x1) * (y2a - y1a) / (x2 - x1) + y1a
+                    yb = (x - x1) * (y2b-y1b) / (x2-x1) + y1b
+
+                    pygame.draw.line(world_view, pygame.Color("light blue"), (49 + x, 0), (49 + x, 49 + -ya)) # Ceiling
+                    pygame.draw.line(world_view, pygame.Color("gray"), (49 + x, 49 + yb), (49 + x, 140)) # Floor
+
+                    pygame.draw.line(world_view, pygame.Color(COLOR[n]), (49 + x, 49 + ya), (49 + x, 49 + yb)) # Wall
+
+
+                pygame.draw.line(world_view, pygame.Color("red"), (49 + x1, 49 + y1a), (49 + x1, 49 + y1b)) # # Left
+                pygame.draw.line(world_view, pygame.Color("red"), (49 + x2, 49 + y2a), (49 + x2, 49 + y2b)) # Right
 
         pygame.draw.rect(world_view, pygame.Color("cyan"), pygame.Rect(0, 0, 98, 109), 1)
 
