@@ -1,4 +1,4 @@
-# DoomEngine, 0.00 WIP
+# PROTOTYPE, 0.0 WIP
 # Developed by Zain Akram
 
 import sys
@@ -8,15 +8,15 @@ import pygame.draw
 
 # Screen size
 WINDOW_WIDTH = 640
-WINDOW_HEIGHT = 400
+WINDOW_HEIGHT = 360
 VIEW_WIDTH = 320
-VIEW_HEIGHT = 200
+VIEW_HEIGHT = 180
 
 CLEAR_COLOR = (pygame.Color("black"))
 
 FRAMERATE = 60
-HFOV = 85
-VFOV = 580
+HFOV = 103
+VFOV = 620
 
 COLOR = [ 
         pygame.Color("yellow"), 
@@ -27,13 +27,15 @@ COLOR = [
 
 class Player:
 
-    SPEED = 0.3
+    SPEED = 0.4
     ROTATION = 0.025
+    SENSITIVITY = 0.0008
 
     def __init__(self, x, y, rotation):
         self.x = x
         self.y = y
         self.angle = rotation
+        self.__previous_key = pygame.key.get_pressed()
 
     def update(self):
         mouse_x = pygame.mouse.get_rel()[0]
@@ -41,7 +43,7 @@ class Player:
 
         # Mouse rotation
         if (pygame.event.get_grab()):
-            self.angle += mouse_x * 0.0035
+            self.angle += mouse_x * self.SENSITIVITY
 
         # Left and right rotation
         if (keys_down[pygame.K_LEFT]):
@@ -93,7 +95,7 @@ def intersect(x1, y1, x2, y2, x3, y3, x4, y4):
 def main():
     # Inintialise pygame
     pygame.init()
-    pygame.display.set_caption("DoomEngine")
+    pygame.display.set_caption("PROTOTYPE")
     pygame.mouse.set_visible(False)
     clock = pygame.time.Clock()
 
@@ -105,17 +107,17 @@ def main():
     target = pygame.Surface((VIEW_WIDTH, VIEW_HEIGHT))
     pygame.event.set_grab(True)
 
-    top_view = pygame.Surface((98, 109))
-    transformed_view = pygame.Surface((98, 109))
-    world_view = pygame.Surface((98, 109))
+    top_view = pygame.Surface((64, 64))
+    transformed_view = pygame.Surface((64, 64))
+    world_view = pygame.Surface((320, 180))
 
     # Initialise objects
-    player = Player(49, 49, 0)
+    player = Player(32, 32, 0)
     walls = [
-            Wall(70, 20, 70, 70),
-            Wall(70, 70, 20, 70),
-            Wall(20, 70, 20, 20),
-            Wall(20, 20, 70, 20)
+            Wall(57, 7, 57, 57),
+            Wall(57, 57, 7, 57),
+            Wall(7, 57, 7, 7),
+            Wall(7, 7, 57, 7)
             ]
 
     # Main loop
@@ -150,10 +152,7 @@ def main():
         pygame.draw.line(top_view, pygame.Color("red"), (player.x, player.y), (int(math.cos(player.angle) * 5 + player.x), int(math.sin(player.angle) * 5 + player.y)))
         top_view.set_at((int(player.x), int(player.y)), pygame.Color("green"))
 
-        pygame.draw.rect(top_view, pygame.Color("blue"), pygame.Rect(0, 0, 98, 109), 1)
-
-        # Draw the top down view
-        target.blit(top_view, (6, 40))
+        pygame.draw.rect(top_view, pygame.Color("red"), pygame.Rect(0, 0, 64, 64), 1)
 
         #endregion
 
@@ -173,16 +172,13 @@ def main():
             ry2 = tx2 * math.cos(player.angle) + ty2 * math.sin(player.angle)
 
             # Draw the wall
-            pygame.draw.line(transformed_view, pygame.Color(COLOR[n]), (49 - rx1, 49 - ry1), (49 - rx2, 49 - ry2))
+            pygame.draw.line(transformed_view, pygame.Color(COLOR[n]), (32 - rx1, 32 - ry1), (32 - rx2, 32 - ry2))
 
         # Draw the player
-        pygame.draw.line(transformed_view, pygame.Color("red"), (49, 49), (49, 44))
-        transformed_view.set_at((49, 49), pygame.Color("green"))
+        pygame.draw.line(transformed_view, pygame.Color("red"), (32, 32), (32, 27))
+        transformed_view.set_at((32, 32), pygame.Color("green"))
 
-        pygame.draw.rect(transformed_view, pygame.Color("green"), pygame.Rect(0, 0, 98, 109), 1)
-
-        # Draw the transformed view
-        target.blit(transformed_view, (111, 40))
+        pygame.draw.rect(transformed_view, pygame.Color("red"), pygame.Rect(0, 0, 64, 64), 1)
 
         #endregion
         
@@ -208,7 +204,6 @@ def main():
                 nearside = 0.0001
                 farside = 1000
 
-                ''''''
                 ix1, iy1 = intersect(rx1, ry1, rx2, ry2, -nearside, nearside, -farside, farz)
                 ix2, iy2 = intersect(rx1, ry1, rx2, ry2, nearside, nearside, farside, farz)
 
@@ -241,37 +236,43 @@ def main():
                 dx1 = x1
                 dx2 = x2
 
-                if not(49 + x1 > 1):
-                    dx1 = 1 - 49
+                if not(180 + x1 > 0):
+                    dx1 = -180
                     
-                if not(49 + x1 < 96):
-                    dx1 = 97 - 49
+                if not(180 + x1 < 360):
+                    dx1 = 180
 
-                if not(49 + x2 > 1):
-                    dx2 = 1 - 49
+                if not(180 + x2 > 0):
+                    dx2 = -180
                     
-                if not(49 + x2 < 96):
-                    dx2 = 97 - 49
+                if not(180 + x2 < 360):
+                    dx2 = 180
 
                 for x in range(int(dx1), int(dx2)):
                     ya = (x - x1) * (y2a - y1a) / (x2 - x1) + y1a
                     yb = (x - x1) * (y2b-y1b) / (x2-x1) + y1b
 
-                    pygame.draw.line(world_view, pygame.Color("light blue"), (49 + x, 0), (49 + x, 49 + -ya)) # Ceiling
-                    pygame.draw.line(world_view, pygame.Color("gray"), (49 + x, 49 + yb), (49 + x, 140)) # Floor
+                    pygame.draw.line(world_view, pygame.Color("light blue"), (180 + x, 0), (180 + x, 180 + -ya)) # Ceiling
+                    pygame.draw.line(world_view, pygame.Color("snow"), (180 + x, 180 + yb), (180 + x, 90)) # Floor
 
-                    pygame.draw.line(world_view, pygame.Color(COLOR[n]), (49 + x, 49 + ya), (49 + x, 49 + yb)) # Wall
+                    pygame.draw.line(world_view, pygame.Color(COLOR[n]), (180 + x, 90 + ya), (180 + x, 90 + yb)) # Wall
 
 
-                pygame.draw.line(world_view, pygame.Color("red"), (49 + x1, 49 + y1a), (49 + x1, 49 + y1b)) # # Left
-                pygame.draw.line(world_view, pygame.Color("red"), (49 + x2, 49 + y2a), (49 + x2, 49 + y2b)) # Right
+                pygame.draw.line(world_view, pygame.Color("red"), (180 + x1, 90 + y1a), (180 + x1, 90 + y1b)) # # Left
+                pygame.draw.line(world_view, pygame.Color("red"), (180 + x2, 90 + y2a), (180 + x2, 90 + y2b)) # Right
 
-        pygame.draw.rect(world_view, pygame.Color("cyan"), pygame.Rect(0, 0, 98, 109), 1)
-
-        # Draw the world view
-        target.blit(world_view, (216, 40))
+        #pygame.draw.rect(world_view, pygame.Color("cyan"), pygame.Rect(0, 0, 98, 109), 1)
 
         #endregion
+
+        # Draw the world view
+        target.blit(world_view, (0, 0))
+
+        # Draw the transformed view
+        target.blit(transformed_view, (4, 4))
+
+        # Draw the top down view
+        target.blit(top_view, (4, 72))
 
         #region Render target resizing
 
@@ -290,7 +291,7 @@ def main():
         
         # Cap the framerate at 60 frames per second
         clock.tick(FRAMERATE)
-        pygame.display.set_caption("DoomEngine, FPS: {}".format(clock.get_fps()))
+        pygame.display.set_caption("PROTOTYPE, FPS: {}".format(clock.get_fps()))
 
     pygame.quit()
     sys.exit()
