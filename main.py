@@ -39,6 +39,10 @@ def main():
         graphics.fill(pygame.Color("black"))        
         target.fill(CLEAR_COLOR)
 
+        ''' 
+        OBJECTIVE 2: Allow for a scalable window
+        '''
+
         #region Render target resizing
 
         window_width, window_height = graphics.get_size()
@@ -46,6 +50,10 @@ def main():
 
         bar_width = int((window_width - int(VIEW_WIDTH * scale)) / 2)
         bar_height = int((window_height - int(VIEW_HEIGHT * scale)) / 2)
+
+        '''
+        OBJECTIVE 2.1: Resize all content within window to correct size 
+        '''
 
         resized = pygame.transform.scale(target, (int(VIEW_WIDTH * scale), int(VIEW_HEIGHT * scale)))
         graphics.blit(resized, (bar_width, bar_height))
