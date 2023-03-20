@@ -3,6 +3,7 @@
 
 import sys
 import math
+import json
 import pygame
 import pygame.draw
 
@@ -16,6 +17,45 @@ CLEAR_COLOR = (pygame.Color("cornflower blue"))
 
 FRAMERATE = 60
 
+class Wall:
+    def __init__(self, x, y, next_sector):
+        self.x = x
+        self.y = y
+        self.next_sector = next_sector
+
+class Sector:
+    def __init__(self, id, start_wall, num_walls, floor, ceiling):
+        self.id = id
+        self.start_wall = start_wall
+        self.num_walls = num_walls
+        self.floor = floor
+        self.ceiling = ceiling
+
+''' 
+OBJECTIVE 1: Creating map files (also see content/map.json)
+'''
+
+def load_map(path):
+    sectors = []
+    walls = []
+
+    '''
+    OBJECTIVE 1.2: Read map files into a workable format
+    '''
+
+    with open(path) as file:
+        data = json.load(file)
+
+    for i, n in enumerate(data["sectors"]):
+        sector = Sector(i, n["startWall"], n["numWalls"], n["floor"], n["ceiling"])
+        sectors.append(sector)
+    
+    for i, n in enumerate(data["walls"]):
+        wall = Wall(n["x"], n["y"], n["nextSector"])
+        walls.append(wall)
+
+    return sectors, walls
+
 def main():
     # Inintialise pygame
     pygame.init()
@@ -27,6 +67,8 @@ def main():
     graphics = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), flags)
     graphics.set_alpha(None)
     target = pygame.Surface((VIEW_WIDTH, VIEW_HEIGHT))
+
+    sectors, walls = load_map("content/map.json")
 
     # Main loop
     is_running = True
