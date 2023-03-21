@@ -17,6 +17,12 @@ CLEAR_COLOR = (pygame.Color("cornflower blue"))
 
 FRAMERATE = 60
 
+# Gameplay TODO: Create object to hand state. Needs to be writeable not constants
+SENSITIVITY = 0.0024
+MULTIPLIER = 31.25
+SPEED = 0.4
+
+
 class Wall:
     def __init__(self, x, y, next_sector):
         self.x = x
@@ -31,8 +37,63 @@ class Sector:
         self.floor = floor
         self.ceiling = ceiling
 
+class Player:
+    def __init__(self, x, y, angle):
+        self.x = x
+        self.y = y
+        self.angle = math.radians(angle)
+        self.__previous_key = pygame.key.get_pressed()
+
+    '''
+    OBJECTIVE 9: Update the player's position
+    '''
+
+    def update(self):
+            # TODO: Multiply by delta time to make speed framerate independent
+            mouse_x = pygame.mouse.get_rel()[0]
+            keys_down = pygame.key.get_pressed()
+
+            '''
+            OBJECTIVE 9.2: Allow for rotation using the mouse
+            '''
+
+            # Mouse rotation
+            self.angle += mouse_x * SENSITIVITY
+
+            '''
+            OBJECTIVE 9.1: Allow for movement backwards and forward and strafing using keyboard keys
+            '''
+
+            # Left and right rotation
+            if (keys_down[pygame.K_LEFT]):
+                self.angle -= SENSITIVITY * MULTIPLIER
+            
+            if (keys_down[pygame.K_RIGHT]):
+                self.angle += SENSITIVITY * MULTIPLIER
+
+            # Backwards and forwards movement
+            if (keys_down[pygame.K_UP] or keys_down[pygame.K_w]):
+                self.x += math.cos(self.angle) * SPEED
+                self.y += math.sin(self.angle) * SPEED
+
+            
+            if (keys_down[pygame.K_DOWN] or keys_down[pygame.K_s]):
+                self.x -= math.cos(self.angle) * SPEED
+                self.y -= math.sin(self.angle) * SPEED
+
+            # Strafe left and right
+            if (keys_down[pygame.K_a]):
+                self.x += math.sin(self.angle) * SPEED
+                self.y -= math.cos(self.angle) * SPEED
+            
+            if (keys_down[pygame.K_d]):
+                self.x -= math.sin(self.angle) * SPEED
+                self.y += math.cos(self.angle) * SPEED
+
+            self.__previous_key = keys_down
+
 ''' 
-OBJECTIVE 1: Creating map files (also see content/map.json)
+OBJECTIVE 1: Creating map files (also see "content/map.json")
 '''
 
 def load_map(path):
@@ -69,6 +130,7 @@ def main():
     target = pygame.Surface((VIEW_WIDTH, VIEW_HEIGHT))
 
     sectors, walls = load_map("content/map.json")
+    player = Player(0, 0, 0)
 
     # Main loop
     is_running = True
@@ -77,9 +139,15 @@ def main():
             if event.type == pygame.QUIT:
                 is_running = False
 
-        # Rendering
+        # Updating TODO: Seperate into single procedure
+        player.update()
+
+        # Rendering TODO: Seperate into single procedure
         graphics.fill(pygame.Color("black"))        
         target.fill(CLEAR_COLOR)
+
+        pygame.draw.line(target, pygame.Color("red"), (player.x, player.y), (int(math.cos(player.angle) * 5 + player.x), int(math.sin(player.angle) * 5 + player.y)))
+        target.set_at((int(player.x), int(player.y)), pygame.Color("green"))
 
         ''' 
         OBJECTIVE 2: Allow for a scalable window
@@ -107,7 +175,7 @@ def main():
         # Cap the framerate at 60 frames per second
         clock.tick(FRAMERATE)
         pygame.display.set_caption("PLOOM, FPS: {}".format(clock.get_fps()))
-
+    
     pygame.quit()
     sys.exit()
 
