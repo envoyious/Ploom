@@ -15,13 +15,58 @@ VIEW_HEIGHT = 180
 
 CLEAR_COLOR = (pygame.Color("cornflower blue"))
 
+# Engine
 FRAMERATE = 60
+HFOV = math.radians(103)
+VFOV = math.radians(90)
 
-# Gameplay TODO: Create object to hand state. Needs to be writeable not constants
+# Gameplay TODO: Create object to handle state. Needs to be writeable not constants
 SENSITIVITY = 0.0024
 MULTIPLIER = 31.25
 SPEED = 0.4
 
+# -1 right, 0 on, 1 left given a point and a line
+def point_side(x, y, ax, ay, bx, by):
+    return math.copysign(1, (bx - ax) * (y - ay) - (by - ay) * (x - ax))
+
+# Rotate a point given an angle
+def rotate(x, y, a):
+    return (x * math.sin(a) - y * math.cos(a)), (x * math.cos(a) + y * math.sin(a))
+
+# Transforms point a to be relative player
+def translate(ax, ay, px, py):
+    return ax - px, ay - py
+
+# Transforms position from world space into viewport space
+def world_to_viewport(x, y, px, py, a):
+    x, y = translate(x, y, px, py)
+    return rotate(x, y, a)
+
+# Calculates intersection point given two segments, returns (None, None) if no intersection
+def intersect(a1x, a1y, a2x, a2y, b1x, b1y, b2x, b2y):
+    # When the two lines are parallel or coincident, the denominator is zero.
+    d = ((a1x - a2x) * (b1y - b2y)) - ((a1y - a2y) * (b1x - b2x))
+
+    # The denominator, d, is checked before calculation to avoid divison by zero error
+    if abs(d) < 0.000001: 
+        return None, None
+
+    t = (((a1x - b1x) * (b1y - b2y)) - ((a1y - b1y) * (b1x - b2x))) / d
+    u = (((a1x - b1x) * (a1y - a2y)) - ((a1y - b1y) * (a1x - a2x))) / d
+
+    if t >= 0 and t <= 1 and u >= 0 and u <= 1:
+        return a1x + (t * (a2x - a1x)), a1y + (t * (a2y - a1y))
+    else:
+        return None, None
+
+# https://stackoverflow.com/questions/24234609/standard-way-to-normalize-an-angle-to-%CF%80-radians-in-java
+# Normalises angle to between -pi and pi
+def normalise(angle):
+    return angle - (2 * math.pi) * math.floor((angle + math.pi) / (2 * math.pi))
+
+# Convert angle in [-(HFOV / 2)..+(HFOV / 2)] to x coordinate
+def screen_angle_to_x(angle):
+    return int(VIEW_WIDTH // 2 * (1 - math.tan(((angle + (HFOV / 2)) / HFOV) * (math.pi / 2) - (math.pi / 4))))
 
 class Wall:
     def __init__(self, x, y, next_sector):
