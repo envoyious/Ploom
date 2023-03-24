@@ -61,12 +61,28 @@ def intersect(a1x, a1y, a2x, a2y, b1x, b1y, b2x, b2y):
 
 # https://stackoverflow.com/questions/24234609/standard-way-to-normalize-an-angle-to-%CF%80-radians-in-java
 # Normalises angle to between -pi and pi
-def normalise(angle):
+def normalise_angle(angle):
     return angle - (2 * math.pi) * math.floor((angle + math.pi) / (2 * math.pi))
 
 # Convert angle in [-(HFOV / 2)..+(HFOV / 2)] to x coordinate
 def screen_angle_to_x(angle):
     return int(VIEW_WIDTH // 2 * (1 - math.tan(((angle + (HFOV / 2)) / HFOV) * (math.pi / 2) - (math.pi / 4))))
+
+# Point is in sector if it is on the right side of all walls
+def point_in_sector(x, y, sector, walls):
+    for i in range(sector.num_walls):
+        p1 = walls[sector.start_wall + i]
+
+        # Make sure the sector does not contain any walls from a different sector
+        n = sector.start_wall + i + 1
+        if n >= sector.start_wall + sector.num_walls:
+            n = sector.start_wall
+        
+        p2 = walls[n] 
+
+        if point_side(x, y, p1.x, p1.y, p2.x, p2.y) < 0:
+            return False
+    return True
 
 class Wall:
     def __init__(self, x, y, next_sector):
@@ -186,6 +202,8 @@ def main():
 
         # Updating TODO: Seperate into single procedure
         player.update()
+
+        let = point_in_sector(9, 4, sectors[0], walls)
 
         # Rendering TODO: Seperate into single procedure
         graphics.fill(pygame.Color("black"))        

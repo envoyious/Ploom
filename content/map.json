@@ -14,19 +14,13 @@
         },
         {
             "startWall": 12,
-            "numWalls": 10,
+            "numWalls": 6,
             "floor": 0.0,
             "ceiling": 5.0
         },
         {
             "startWall": 22,
-            "numWalls": 4,
-            "floor": 0.0,
-            "ceiling": 5.0
-        },
-        {
-            "startWall": 26,
-            "numWalls": 4,
+            "numWalls": 8,
             "floor": 0.0,
             "ceiling": 5.0
         }
