@@ -19,7 +19,7 @@
             "ceiling": 5.0
         },
         {
-            "startWall": 22,
+            "startWall": 18,
             "numWalls": 8,
             "floor": 0.0,
             "ceiling": 5.0

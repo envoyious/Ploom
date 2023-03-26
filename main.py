@@ -23,7 +23,7 @@ VFOV = math.radians(90)
 # Gameplay TODO: Create object to handle state. Needs to be writeable not constants
 SENSITIVITY = 0.0024
 MULTIPLIER = 31.25
-SPEED = 0.4
+SPEED = 0.04
 
 # -1 right, 0 on, 1 left given a point and a line
 def point_side(x, y, ax, ay, bx, by):
@@ -78,6 +78,8 @@ def point_in_sector(x, y, sector, walls):
         if n >= sector.start_wall + sector.num_walls:
             n = sector.start_wall
         
+
+
         p2 = walls[n] 
 
         if point_side(x, y, p1.x, p1.y, p2.x, p2.y) < 0:
@@ -100,6 +102,9 @@ class Queue:
     def __getitem__(self, index):
         return self.__list[index]
     
+    def __len__(self):
+         return len(self.__list)
+    
 class Wall:
     def __init__(self, x, y, next_sector):
         self.x = x
@@ -119,6 +124,7 @@ class Player:
         self.x = x
         self.y = y
         self.angle = math.radians(angle)
+        self.sector = 0
         self.__previous_key = pygame.key.get_pressed()
 
     '''
@@ -169,6 +175,37 @@ class Player:
 
             self.__previous_key = keys_down
 
+    def find_sector(self, sectors, walls):
+        # Breath Fisrst Traversal is used as player is likely to be in neighbouring sectors
+        queue = Queue()
+        visited = list()
+
+        visited.append(self.sector)
+        queue.enqueue(self.sector)
+        found = None
+
+        while len(queue) != 0:
+            id = queue.peek()
+            queue.dequeue()
+            sector = sectors[id]
+
+            if point_in_sector(self.x, self.y, sector, walls):
+                found = id
+                break
+
+            for i in range(sector.num_walls):
+                wall = walls[sector.start_wall + i]
+                if wall.next_sector != -1:
+                    if wall.next_sector not in visited:
+                        visited.append(wall.next_sector)
+                        queue.enqueue(wall.next_sector)
+
+        if found == None:
+            print("ERROR: Player is not in a sector!")
+            self.sector = 0
+        else:
+            self.sector = found
+
 ''' 
 OBJECTIVE 1: Creating map files (also see "content/map.json")
 '''
@@ -207,7 +244,7 @@ def main():
     target = pygame.Surface((VIEW_WIDTH, VIEW_HEIGHT))
 
     sectors, walls = load_map("content/map.json")
-    player = Player(0, 0, 0)
+    player = Player(8, 4, 0)
 
     # Main loop
     is_running = True
@@ -218,15 +255,31 @@ def main():
 
         # Updating TODO: Seperate into single procedure
         player.update()
-
-        let = point_in_sector(9, 4, sectors[0], walls)
+        player.find_sector(sectors, walls)
 
         # Rendering TODO: Seperate into single procedure
         graphics.fill(pygame.Color("black"))        
         target.fill(CLEAR_COLOR)
 
-        pygame.draw.line(target, pygame.Color("red"), (player.x, player.y), (int(math.cos(player.angle) * 5 + player.x), int(math.sin(player.angle) * 5 + player.y)))
-        target.set_at((int(player.x), int(player.y)), pygame.Color("green"))
+        pygame.draw.line(target, pygame.Color("red"), (player.x * 10, player.y * 10), (int(math.cos(player.angle) * 5 + player.x * 10), int(math.sin(player.angle) * 5 + player.y * 10)))
+        target.set_at((int(player.x * 10), int(player.y * 10)), pygame.Color("green"))
+
+        for sector in sectors:
+            for i in range(sector.num_walls):
+                p1 = walls[sector.start_wall + i]
+
+                n = sector.start_wall + i + 1
+                if n >= sector.start_wall + sector.num_walls:
+                    n = sector.start_wall
+                
+                p2 = walls[n] 
+
+                if p1.next_sector == -1:
+                    colour = pygame.Color("black")
+                else:
+                    colour = pygame.Color("red")
+                
+                pygame.draw.line(target, colour, (p1.x*10, p1.y*10), (p2.x*10, p2.y*10))
 
         ''' 
         OBJECTIVE 2: Allow for a scalable window
