@@ -84,6 +84,22 @@ def point_in_sector(x, y, sector, walls):
             return False
     return True
 
+class Queue:
+    def __init__(self, items: list = list()):
+        self.__list = items
+
+    def enqueue(self, item):
+        self.__list.append(item)
+
+    def dequeue(self):
+        self.__list.pop(0)
+
+    def peek(self):
+        return self.__list[0]
+
+    def __getitem__(self, index):
+        return self.__list[index]
+    
 class Wall:
     def __init__(self, x, y, next_sector):
         self.x = x
