@@ -104,6 +104,25 @@ class Queue:
     def __len__(self):
          return len(self.__list)
     
+class Stack:
+    def __init__(self, items: list = list()):
+        self.__list = items
+
+    def push(self, item):
+        self.__list.append(item)
+
+    def pop(self):
+        self.__list.pop(-1)
+
+    def peek(self):
+        return self.__list[-1]
+
+    def __getitem__(self, index):
+        return self.__list[index]
+    
+    def __len__(self):
+         return len(self.__list)
+    
 class Frustum:
     def __init__(self, angle):
         __left_x, __left_y = rotate(0, 1, math.pi / 2 - (angle / 2))
