@@ -19,6 +19,8 @@ CLEAR_COLOR = (pygame.Color("cornflower blue"))
 FRAMERATE = 60
 HFOV = math.radians(103)
 VFOV = math.radians(90)
+ZNEAR = 0.0001
+ZFAR = 100
 
 # Gameplay TODO: Create object to handle state. Needs to be writeable not constants
 SENSITIVITY = 0.0024
@@ -30,17 +32,17 @@ def point_side(x, y, ax, ay, bx, by):
     return math.copysign(1, (bx - ax) * (y - ay) - (by - ay) * (x - ax))
 
 # Rotate a point given an angle
-def rotate(x, y, a):
-    return (x * math.sin(a) - y * math.cos(a)), (x * math.cos(a) + y * math.sin(a))
+def rotate(x, y, angle):
+    return (x * math.sin(angle) - y * math.cos(angle)), (x * math.cos(angle) + y * math.sin(angle))
 
 # Transforms point a to be relative player
 def translate(ax, ay, px, py):
     return ax - px, ay - py
 
 # Transforms position from world space into viewport space
-def world_to_viewport(x, y, px, py, a):
+def world_to_viewport(x, y, px, py, angle):
     x, y = translate(x, y, px, py)
-    return rotate(x, y, a)
+    return rotate(x, y, angle)
 
 # Calculates intersection point given two segments, returns (None, None) if no intersection
 def intersect(a1x, a1y, a2x, a2y, b1x, b1y, b2x, b2y):
@@ -59,7 +61,6 @@ def intersect(a1x, a1y, a2x, a2y, b1x, b1y, b2x, b2y):
     else:
         return None, None
 
-# https://stackoverflow.com/questions/24234609/standard-way-to-normalize-an-angle-to-%CF%80-radians-in-java
 # Normalises angle to between -pi and pi
 def normalise_angle(angle):
     return angle - (2 * math.pi) * math.floor((angle + math.pi) / (2 * math.pi))
@@ -78,8 +79,6 @@ def point_in_sector(x, y, sector, walls):
         if n >= sector.start_wall + sector.num_walls:
             n = sector.start_wall
         
-
-
         p2 = walls[n] 
 
         if point_side(x, y, p1.x, p1.y, p2.x, p2.y) < 0:
@@ -105,6 +104,16 @@ class Queue:
     def __len__(self):
          return len(self.__list)
     
+class Frustum:
+    def __init__(self, angle):
+        __left_x, __left_y = rotate(0, 1, math.pi / 2 - (angle / 2))
+        __right_x, __right_y = rotate(0, 1, math.pi / 2 - (-angle / 2))
+
+        near_left_x, near_left_y = __left_x * ZNEAR, __left_y * ZNEAR
+        far_left_x, far_left_y = __left_x * ZFAR, __left_y * ZFAR
+        near_right_x, near_right_y = __right_x * ZNEAR, __right_y * ZNEAR
+        far_right_x, far_right_y = __right_x * ZFAR, __right_y * ZFAR
+
 class Wall:
     def __init__(self, x, y, next_sector):
         self.x = x
