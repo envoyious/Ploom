@@ -1,11 +1,9 @@
 # PLOOM, 0.1 WIP
 # Developed by Zain Akram
 
-import sys
-import math
+import sys, math
 import json
-import pygame
-import pygame.draw
+import pygame, pygame.draw
 
 # Screen size
 WINDOW_WIDTH = 640
@@ -27,61 +25,61 @@ SENSITIVITY = 0.0024
 MULTIPLIER = 31.25
 SPEED = 0.04
 
-# -1 right, 0 on, 1 left given a point and a line
-def point_side(x, y, ax, ay, bx, by):
-    return math.copysign(1, (bx - ax) * (y - ay) - (by - ay) * (x - ax))
+# Transforms point a to be relative player
+def translate(point, player):
+    return pygame.Vector2(point.x - player.x, point.y - player.y)
 
 # Rotate a point given an angle
-def rotate(x, y, angle):
-    return (x * math.sin(angle) - y * math.cos(angle)), (x * math.cos(angle) + y * math.sin(angle))
-
-# Transforms point a to be relative player
-def translate(ax, ay, px, py):
-    return ax - px, ay - py
-
-# Transforms position from world space into viewport space
-def world_to_viewport(x, y, px, py, angle):
-    x, y = translate(x, y, px, py)
-    return rotate(x, y, angle)
-
-# Calculates intersection point given two segments, returns (None, None) if no intersection
-def intersect(a1x, a1y, a2x, a2y, b1x, b1y, b2x, b2y):
-    # When the two lines are parallel or coincident, the denominator is zero.
-    d = ((a1x - a2x) * (b1y - b2y)) - ((a1y - a2y) * (b1x - b2x))
-
-    # The denominator, d, is checked before calculation to avoid divison by zero error
-    if abs(d) < 0.000001: 
-        return None, None
-
-    t = (((a1x - b1x) * (b1y - b2y)) - ((a1y - b1y) * (b1x - b2x))) / d
-    u = (((a1x - b1x) * (a1y - a2y)) - ((a1y - b1y) * (a1x - a2x))) / d
-
-    if t >= 0 and t <= 1 and u >= 0 and u <= 1:
-        return a1x + (t * (a2x - a1x)), a1y + (t * (a2y - a1y))
-    else:
-        return None, None
+def rotate(point, angle):
+    return pygame.Vector2(point.x * math.sin(angle) - point.y * math.cos(angle)), (point.x * math.cos(angle) + point.y * math.sin(angle))
 
 # Normalises angle to between -pi and pi
 def normalise_angle(angle):
     return angle - (2 * math.pi) * math.floor((angle + math.pi) / (2 * math.pi))
 
+# Calculates intersection point given two segments, returns (None, None) if no intersection
+def intersect(line_one_start, line_one_end, line_two_start, line_two_end):
+    # When the two lines are parallel or coincident, the denominator is zero.
+    d = ((line_one_start.x - line_one_end.x) * (line_two_start.y - line_two_end.y)) - ((line_one_start.y - line_one_end.y) * (line_two_start.x - line_two_end.x))
+
+    # The denominator, d, is checked before calculation to avoid divison by zero error
+    if abs(d) < 0.000001: 
+        return None
+
+    t = (((line_one_start.x - line_two_start.x) * (line_two_start.y - line_two_end.y)) - ((line_one_start.y - line_two_start.y) * (line_two_start.x - line_two_end.x))) / d
+    u = (((line_one_start.x - line_two_start.x) * (line_one_start.y - line_one_end.y)) - ((line_one_start.y - line_two_start.y) * (line_one_start.x - line_one_end.x))) / d
+
+    if t >= 0 and t <= 1 and u >= 0 and u <= 1:
+        return pygame.Vector2(line_one_start.x + (t * (line_one_end.x - line_one_start.x)), line_one_start.y + (t * (line_one_end.y - line_one_start.y)))
+    else:
+        return None
+
+# Transforms position from world space into viewport space
+def transform(point, player, angle):
+    point = translate(point, player)
+    return rotate(point, angle)
+
 # Convert angle in [-(HFOV / 2)..+(HFOV / 2)] to x coordinate
 def screen_angle_to_x(angle):
     return int(VIEW_WIDTH // 2 * (1 - math.tan(((angle + (HFOV / 2)) / HFOV) * (math.pi / 2) - (math.pi / 4))))
 
+# -1 right, 0 on, 1 left given a point and a line
+def point_side(point, line_start, line_end):
+    return math.copysign(1, (line_end.x - line_start.x) * (point.y - line_start.y) - (line_end.y - line_start.y) * (point.x - line_start.x))
+
 # Point is in sector if it is on the right side of all walls
-def point_in_sector(x, y, sector, walls):
+def point_in_sector(point, sector, walls):
     for i in range(sector.num_walls):
-        p1 = walls[sector.start_wall + i]
+        wall_start = walls[sector.start_wall + i]
 
         # Make sure the sector does not contain any walls from a different sector
         n = sector.start_wall + i + 1
         if n >= sector.start_wall + sector.num_walls:
             n = sector.start_wall
         
-        p2 = walls[n] 
+        wall_end = walls[n] 
 
-        if point_side(x, y, p1.x, p1.y, p2.x, p2.y) < 0:
+        if point_side(point, wall_start.position, wall_end.position) < 0:
             return False
     return True
 
@@ -125,18 +123,17 @@ class Stack:
     
 class Frustum:
     def __init__(self, angle):
-        __left_x, __left_y = rotate(0, 1, math.pi / 2 - (angle / 2))
-        __right_x, __right_y = rotate(0, 1, math.pi / 2 - (-angle / 2))
+        left = rotate(0, 1, math.pi / 2 - (angle / 2))
+        right = rotate(0, 1, math.pi / 2 - (-angle / 2))
 
-        near_left_x, near_left_y = __left_x * ZNEAR, __left_y * ZNEAR
-        far_left_x, far_left_y = __left_x * ZFAR, __left_y * ZFAR
-        near_right_x, near_right_y = __right_x * ZNEAR, __right_y * ZNEAR
-        far_right_x, far_right_y = __right_x * ZFAR, __right_y * ZFAR
+        self.near_left = pygame.Vector2(left.x * ZNEAR, left.y * ZNEAR)
+        self.far_left = pygame.Vector2(left.x * ZFAR, left.y * ZFAR)
+        self.near_right = pygame.Vector2(right.x * ZNEAR, right.y * ZNEAR)
+        self.far_right = pygame.Vector2(right.x * ZFAR, right.y * ZFAR)
 
 class Wall:
-    def __init__(self, x, y, next_sector):
-        self.x = x
-        self.y = y
+    def __init__(self, position, next_sector):
+        self.position = position
         self.next_sector = next_sector
 
 class Sector:
@@ -147,10 +144,15 @@ class Sector:
         self.floor = floor
         self.ceiling = ceiling
 
+class Portal:
+    def __init__(self, sector_id, start_x, end_x):
+        self.sector_id = sector_id
+        self.start_x = start_x
+        self.end_x = end_x
+
 class Player:
-    def __init__(self, x, y, angle):
-        self.x = x
-        self.y = y
+    def __init__(self, position, angle):
+        self.position = position
         self.angle = math.radians(angle)
         self.sector = 0
         self.__previous_key = pygame.key.get_pressed()
@@ -184,22 +186,22 @@ class Player:
 
             # Backwards and forwards movement
             if (keys_down[pygame.K_UP] or keys_down[pygame.K_w]):
-                self.x += math.cos(self.angle) * SPEED
-                self.y += math.sin(self.angle) * SPEED
+                self.position.x += math.cos(self.angle) * SPEED
+                self.position.y += math.sin(self.angle) * SPEED
 
             
             if (keys_down[pygame.K_DOWN] or keys_down[pygame.K_s]):
-                self.x -= math.cos(self.angle) * SPEED
-                self.y -= math.sin(self.angle) * SPEED
+                self.position.x -= math.cos(self.angle) * SPEED
+                self.position.y -= math.sin(self.angle) * SPEED
 
             # Strafe left and right
             if (keys_down[pygame.K_a]):
-                self.x += math.sin(self.angle) * SPEED
-                self.y -= math.cos(self.angle) * SPEED
+                self.position.x += math.sin(self.angle) * SPEED
+                self.position.y -= math.cos(self.angle) * SPEED
             
             if (keys_down[pygame.K_d]):
-                self.x -= math.sin(self.angle) * SPEED
-                self.y += math.cos(self.angle) * SPEED
+                self.position.x -= math.sin(self.angle) * SPEED
+                self.position.y += math.cos(self.angle) * SPEED
 
             self.__previous_key = keys_down
 
@@ -217,7 +219,7 @@ class Player:
             queue.dequeue()
             sector = sectors[id]
 
-            if point_in_sector(self.x, self.y, sector, walls):
+            if point_in_sector(self.position, sector, walls):
                 found = id
                 break
 
@@ -254,10 +256,12 @@ def load_map(path):
         sectors.append(sector)
     
     for i, n in enumerate(data["walls"]):
-        wall = Wall(n["x"], n["y"], n["nextSector"])
+        wall = Wall(pygame.Vector2(n["x"], n["y"]), n["nextSector"])
         walls.append(wall)
 
-    return sectors, walls
+    num_sectors = len(data["sectors"])
+
+    return sectors, walls, num_sectors
 
 def main():
     # Inintialise pygame
@@ -271,8 +275,8 @@ def main():
     graphics.set_alpha(None)
     target = pygame.Surface((VIEW_WIDTH, VIEW_HEIGHT))
 
-    sectors, walls = load_map("content/map.json")
-    player = Player(8, 4, 0)
+    sectors, walls, num_sectors = load_map("content/map.json")
+    player = Player(pygame.Vector3(8, 4, 1.65), 0)
 
     # Main loop
     is_running = True
@@ -289,8 +293,8 @@ def main():
         graphics.fill(pygame.Color("black"))        
         target.fill(CLEAR_COLOR)
 
-        pygame.draw.line(target, pygame.Color("red"), (player.x * 10, player.y * 10), (int(math.cos(player.angle) * 5 + player.x * 10), int(math.sin(player.angle) * 5 + player.y * 10)))
-        target.set_at((int(player.x * 10), int(player.y * 10)), pygame.Color("green"))
+        pygame.draw.line(target, pygame.Color("red"), (player.position.x * 10, player.position.y * 10), (int(math.cos(player.angle) * 5 + player.position.x * 10), int(math.sin(player.angle) * 5 + player.position.y * 10)))
+        target.set_at((int(player.position.x * 10), int(player.position.y * 10)), pygame.Color("green"))
 
         for sector in sectors:
             for i in range(sector.num_walls):
@@ -307,7 +311,7 @@ def main():
                 else:
                     colour = pygame.Color("red")
                 
-                pygame.draw.line(target, colour, (p1.x*10, p1.y*10), (p2.x*10, p2.y*10))
+                pygame.draw.line(target, colour, (p1.position.x*10, p1.position.y*10), (p2.position.x*10, p2.position.y*10))
 
         ''' 
         OBJECTIVE 2: Allow for a scalable window
