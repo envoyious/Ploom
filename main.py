@@ -17,7 +17,7 @@ CLEAR_COLOR = (pygame.Color("cornflower blue"))
 FRAMERATE = 60
 HFOV = math.radians(103)
 VFOV = math.radians(15)
-ZNEAR = 0.0001
+ZNEAR = 0.000001
 ZFAR = 100
 
 # Gameplay TODO: Create object to handle state. Needs to be writeable not constants
@@ -305,6 +305,7 @@ def main():
         # Updating TODO: Seperate into single procedure
         player.update()
         player.find_sector(sectors, walls)
+        player.position.z = sectors[player.sector].floor + 2.4
 
         # Rendering TODO: Seperate into single procedure
         graphics.fill(pygame.Color("black"))        
@@ -348,6 +349,10 @@ def main():
                 
                 wall_end: Wall = walls[n] 
 
+                # Do not render the backside of a portal
+                if wall_start.next_sector == player.sector:
+                    continue
+
                 # Transform the wall points to be rotated around and relative to the player
                 transformed_start_wall = transform(wall_start, player, player.angle)
                 transformed_end_wall = transform(wall_end, player, player.angle)
@@ -364,7 +369,7 @@ def main():
                 if transformed_start_wall.y < ZNEAR \
                     or transformed_end_wall.y < ZNEAR \
                     or wall_start_angle > (HFOV / 2) \
-                    or wall_end_angle < -(HFOV / 2): \
+                    or wall_end_angle < (-HFOV / 2): \
                     
                     # Intersect the wall with the frustum and clip it down to be only within the frustum
                     clipped_start_wall = intersect(transformed_start_wall, transformed_end_wall, frustum.near_left, frustum.far_left)
@@ -423,9 +428,6 @@ def main():
                     scaled_end_y = VFOV * VIEW_HEIGHT / 0.000001
                 
                 # Calculate the y values for the floor and ceiling of the player's sector
-
-                # ~~ ERROR HERE ~~
-
                 floor_screen_y = screen_height_to_y(scaled_start_y, sector.floor, player), screen_height_to_y(scaled_end_y, sector.floor, player)  
                 ceiling_screen_y = screen_height_to_y(scaled_start_y, sector.ceiling, player), screen_height_to_y(scaled_end_y, sector.ceiling, player)
 
@@ -447,13 +449,17 @@ def main():
                     floor_y = clamp(x_progress * (floor_screen_y[1] - floor_screen_y[0]) + floor_screen_y[0], y_bottom[x], y_top[x])
                     ceiling_y = clamp(x_progress * (ceiling_screen_y[1] - ceiling_screen_y[0]) + ceiling_screen_y[0], y_bottom[x], y_top[x])
 
+                    # Pygame's origin point is at the top-left of the screen,
+                    # to convert the calculated coordinates which have an origin at the bottom-left
+                    # the viewing width/height - 1 (as pixels start from 0) is taken away by x/y
+
                     # Draw the ceiling
                     if ceiling_y < y_top[x]:
-                        pygame.draw.line(target, pygame.Color("red"), (VIEW_WIDTH - x - 1, ceiling_y), (VIEW_WIDTH - x - 1, y_top[x]) )
+                        pygame.draw.line(target, pygame.Color("red"), (VIEW_WIDTH - 1 - x, VIEW_HEIGHT - 1 - ceiling_y), (VIEW_WIDTH - 1 - x, VIEW_HEIGHT - 1 - y_top[x]) )
 
                     # Draw the floor
                     if floor_y > y_bottom[x]:
-                        pygame.draw.line(target, pygame.Color("green"), (VIEW_WIDTH - x - 1, y_bottom[x]), (VIEW_WIDTH - x - 1, floor_y))
+                        pygame.draw.line(target, pygame.Color("green"), (VIEW_WIDTH - 1 - x, VIEW_HEIGHT - 1 - y_bottom[x]), (VIEW_WIDTH - 1 - x, VIEW_HEIGHT - 1 - floor_y))
 
                     # If this wall is a portal, draw the top and bottom wall
                     if wall_start.next_sector != -1:
@@ -463,18 +469,18 @@ def main():
 
                         # If this sector's ceiling is higher than the next sector's ceiling, draw the upper wall
                         if sector_ceiling > next_sector_ceiling:
-                            pygame.draw.line(target, pygame.Color("pink"), (VIEW_WIDTH - x - 1, portal_ceiling_y), (VIEW_WIDTH - x - 1, ceiling_y) )
+                            pygame.draw.line(target, pygame.Color("pink"), (VIEW_WIDTH - 1 - x, VIEW_HEIGHT - 1 - portal_ceiling_y), (VIEW_WIDTH - 1 - x, VIEW_HEIGHT - 1 - ceiling_y) )
 
                         # If this sector's floor is lower than the next sector's floor, draw the lower wall
                         if sector_floor < next_sector_floor:
-                            pygame.draw.line(target, pygame.Color("yellow"), (VIEW_WIDTH - x - 1, floor_y), (VIEW_WIDTH - x - 1, portal_floor_y))
+                            pygame.draw.line(target, pygame.Color("yellow"), (VIEW_WIDTH - 1 - x, VIEW_HEIGHT - 1 - floor_y), (VIEW_WIDTH - 1 - x, VIEW_HEIGHT - 1 - portal_floor_y))
 
                         # We need to set the portal dimensions so that in the next loop only walls within that new area are considered
                         y_top[x] = clamp(min(min(ceiling_y, portal_ceiling_y), y_top[x]), 0, VIEW_HEIGHT - 1)
                         y_bottom[x] = clamp(max(max(floor_y, portal_floor_y), y_bottom[x]), 0, VIEW_HEIGHT - 1)
                     else:
                         # Draw the wall
-                        pygame.draw.line(target, pygame.Color("blue"), (VIEW_WIDTH - x - 1, floor_y), (VIEW_WIDTH - x - 1, ceiling_y))
+                        pygame.draw.line(target, pygame.Color("blue"), (VIEW_WIDTH - 1 - x, VIEW_HEIGHT - 1 - floor_y), (VIEW_WIDTH - 1 - x, VIEW_HEIGHT - 1 - ceiling_y))
 
                 # Push the next sector to be rendered onto the stack
                 if wall_start.next_sector != -1:
@@ -482,6 +488,26 @@ def main():
 
         #endregion
 
+        # pygame.draw.line(target, pygame.Color("red"), (player.position.x * 10, player.position.y * 10), (int(math.cos(player.angle) * 5 + player.position.x * 10), int(math.sin(player.angle) * 5 + player.position.y * 10)))
+        # target.set_at((int(player.position.x * 10), int(player.position.y * 10)), pygame.Color("green"))
+
+        # for sector in sectors:
+        #     for i in range(sector.num_walls):
+        #         p1 = walls[sector.start_wall + i]
+
+        #         n = sector.start_wall + i + 1
+        #         if n >= sector.start_wall + sector.num_walls:
+        #             n = sector.start_wall
+                
+        #         p2 = walls[n] 
+
+        #         if p1.next_sector == -1:
+        #             colour = pygame.Color("black")
+        #         else:
+        #             colour = pygame.Color("red")
+                
+        #         pygame.draw.line(target, colour, (p1.position.x*10, p1.position.y*10), (p2.position.x*10, p2.position.y*10))
+                
         ''' 
         OBJECTIVE 2: Allow for a scalable window
         '''
@@ -502,6 +528,7 @@ def main():
         graphics.blit(resized, (bar_width, bar_height))
 
         #endregion
+        
 
         pygame.display.update()
 
