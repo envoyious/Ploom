@@ -21,9 +21,9 @@ ZNEAR = 0.0001
 ZFAR = 100
 
 # Gameplay TODO: Create object to handle state. Needs to be writeable not constants
-SENSITIVITY = 0.0024
-MULTIPLIER = 15.25
-SPEED = 0.04
+SENSITIVITY = 0.00086
+MULTIPLIER = 30.25
+SPEED = 0.06
 
 # Clamp the value to the inclusive range of min and max.
 def clamp(value, min_value, max_value):
@@ -180,7 +180,8 @@ class Player:
             '''
 
             # Mouse rotation
-            self.angle += mouse_x * SENSITIVITY
+            if (pygame.event.get_grab()):
+                self.angle += mouse_x * SENSITIVITY
 
             '''
             OBJECTIVE 9.1: Allow for movement backwards and forward and strafing using keyboard keys
@@ -276,6 +277,7 @@ def main():
     # Inintialise pygame
     pygame.init()
     pygame.display.set_caption("PLOOM")
+    pygame.mouse.set_visible(False)
     clock = pygame.time.Clock()
 
     # Set display mode
@@ -283,6 +285,8 @@ def main():
     graphics = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), flags)
     graphics.set_alpha(None)
     target = pygame.Surface((VIEW_WIDTH, VIEW_HEIGHT))
+    pygame.event.set_grab(True)
+
 
     sectors, walls, num_sectors = load_map("content/map.json")
     player = Player(pygame.Vector3(8, 4, 1.65), 0)
@@ -293,6 +297,10 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 is_running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    pygame.mouse.set_visible(not(pygame.mouse.get_visible()))
+                    pygame.event.set_grab(not(pygame.event.get_grab()))
 
         # Updating TODO: Seperate into single procedure
         player.update()
@@ -302,7 +310,7 @@ def main():
         graphics.fill(pygame.Color("black"))        
         target.fill(CLEAR_COLOR)
 
-        #region Rendering walls
+        #region Render walls
 
         # Keep track of whether or not a sector has been drawn
         rendered_sectors = [False for i in range(num_sectors)]
