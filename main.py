@@ -16,22 +16,31 @@ CLEAR_COLOR = (pygame.Color("cornflower blue"))
 # Engine
 FRAMERATE = 60
 HFOV = math.radians(103)
-VFOV = math.radians(90)
+VFOV = math.radians(15)
 ZNEAR = 0.0001
 ZFAR = 100
 
 # Gameplay TODO: Create object to handle state. Needs to be writeable not constants
 SENSITIVITY = 0.0024
-MULTIPLIER = 31.25
+MULTIPLIER = 15.25
 SPEED = 0.04
 
+# Clamp the value to the inclusive range of min and max.
+def clamp(value, min_value, max_value):
+        return min(max(value, min_value), max_value)
+         
 # Transforms point a to be relative player
 def translate(point, player):
-    return pygame.Vector2(point.x - player.x, point.y - player.y)
+    return pygame.Vector2(point.position.x - player.position.x, point.position.y - player.position.y)
 
 # Rotate a point given an angle
 def rotate(point, angle):
-    return pygame.Vector2(point.x * math.sin(angle) - point.y * math.cos(angle)), (point.x * math.cos(angle) + point.y * math.sin(angle))
+    return pygame.Vector2(point.x * math.sin(angle) - point.y * math.cos(angle), point.x * math.cos(angle) + point.y * math.sin(angle))
+
+# Transforms position from world space into viewport space
+def transform(point, player, angle):
+    point = translate(point, player)
+    return rotate(point, angle)
 
 # Normalises angle to between -pi and pi
 def normalise_angle(angle):
@@ -54,20 +63,20 @@ def intersect(line_one_start, line_one_end, line_two_start, line_two_end):
     else:
         return None
 
-# Transforms position from world space into viewport space
-def transform(point, player, angle):
-    point = translate(point, player)
-    return rotate(point, angle)
-
-# Convert angle in [-(HFOV / 2)..+(HFOV / 2)] to x coordinate
+# Convert angle in -HFOV / 2 to HFOV / 2 into a x coordinate
 def screen_angle_to_x(angle):
     return int(VIEW_WIDTH // 2 * (1 - math.tan(((angle + (HFOV / 2)) / HFOV) * (math.pi / 2) - (math.pi / 4))))
 
-# -1 right, 0 on, 1 left given a point and a line
+# Convert ceiling and floor heights into a y coordinate
+def screen_height_to_y(scaled_y, height, player):
+    return (VIEW_HEIGHT / 2) + int((height - player.position.z) * scaled_y)
+
+
+# -1 right, 1 left given a point and a line
 def point_side(point, line_start, line_end):
     return math.copysign(1, (line_end.x - line_start.x) * (point.y - line_start.y) - (line_end.y - line_start.y) * (point.x - line_start.x))
 
-# Point is in sector if it is on the right side of all walls
+# Point is in sector if it is on the left side of all walls
 def point_in_sector(point, sector, walls):
     for i in range(sector.num_walls):
         wall_start = walls[sector.start_wall + i]
@@ -79,7 +88,7 @@ def point_in_sector(point, sector, walls):
         
         wall_end = walls[n] 
 
-        if point_side(point, wall_start.position, wall_end.position) < 0:
+        if point_side(point, wall_start.position, wall_end.position) > 0:
             return False
     return True
 
@@ -123,8 +132,8 @@ class Stack:
     
 class Frustum:
     def __init__(self, angle):
-        left = rotate(0, 1, math.pi / 2 - (angle / 2))
-        right = rotate(0, 1, math.pi / 2 - (-angle / 2))
+        left = rotate(pygame.Vector2(0, 1), math.pi / 2 - (angle / 2))
+        right = rotate(pygame.Vector2(0, 1), math.pi / 2 - (-angle / 2))
 
         self.near_left = pygame.Vector2(left.x * ZNEAR, left.y * ZNEAR)
         self.far_left = pygame.Vector2(left.x * ZFAR, left.y * ZFAR)
@@ -293,25 +302,177 @@ def main():
         graphics.fill(pygame.Color("black"))        
         target.fill(CLEAR_COLOR)
 
-        pygame.draw.line(target, pygame.Color("red"), (player.position.x * 10, player.position.y * 10), (int(math.cos(player.angle) * 5 + player.position.x * 10), int(math.sin(player.angle) * 5 + player.position.y * 10)))
-        target.set_at((int(player.position.x * 10), int(player.position.y * 10)), pygame.Color("green"))
+        #region Rendering walls
 
-        for sector in sectors:
+        # Keep track of whether or not a sector has been drawn
+        rendered_sectors = [False for i in range(num_sectors)]
+
+        y_bottom = [0 for i in range(VIEW_WIDTH)]
+        y_top = [VIEW_WIDTH - 1 for i in range(VIEW_WIDTH)]
+
+        # Create the view frustum
+        frustum = Frustum(HFOV)
+
+        # Start rendering at the sector which contains the player
+        stack = Stack([Portal(player.sector, 0, VIEW_WIDTH - 1)])
+
+        while len(stack) != 0:
+            # The original portal contains the whole screen, every subsequent portal is a smaller portion of the screen
+            portal: Portal = stack.peek()
+            stack.pop()
+
+            # Do not render the sector if it has already been drawn
+            if rendered_sectors[portal.sector_id]:
+                continue
+
+            rendered_sectors[portal.sector_id] = True
+            sector = sectors[portal.sector_id]
+
+            # Loop over every wall within the sector
             for i in range(sector.num_walls):
-                p1 = walls[sector.start_wall + i]
+                # Get the position of the wall within the sector
+                wall_start: Wall = walls[sector.start_wall + i]
 
+                # Make sure the second point is not a wall form the next sector
                 n = sector.start_wall + i + 1
                 if n >= sector.start_wall + sector.num_walls:
                     n = sector.start_wall
                 
-                p2 = walls[n] 
+                wall_end: Wall = walls[n] 
 
-                if p1.next_sector == -1:
-                    colour = pygame.Color("black")
-                else:
-                    colour = pygame.Color("red")
+                # Transform the wall points to be rotated around and relative to the player
+                transformed_start_wall = transform(wall_start, player, player.angle)
+                transformed_end_wall = transform(wall_end, player, player.angle)
+
+                # Both wall points are bend the player, do not render the wall
+                if transformed_start_wall.y <= 0 and transformed_end_wall.y <= 0:
+                    continue
+
+                # Get the angle between the wall points and the y axis
+                wall_start_angle = normalise_angle(math.atan2(transformed_start_wall.y, transformed_start_wall.x) - math.pi / 2)
+                wall_end_angle = normalise_angle(math.atan2(transformed_end_wall.y, transformed_end_wall.x) - math.pi / 2)
+
+                # If the wall is partially in front of the player, clip it against the view frustum
+                if transformed_start_wall.y < ZNEAR \
+                    or transformed_end_wall.y < ZNEAR \
+                    or wall_start_angle > (HFOV / 2) \
+                    or wall_end_angle < -(HFOV / 2): \
+                    
+                    # Intersect the wall with the frustum and clip it down to be only within the frustum
+                    clipped_start_wall = intersect(transformed_start_wall, transformed_end_wall, frustum.near_left, frustum.far_left)
+                    clipped_end_wall = intersect(transformed_start_wall, transformed_end_wall, frustum.near_right, frustum.far_right)
+
+                    # The angle between the wall and the y axis needs to be recalculated if the wall were clipped
+                    if (clipped_start_wall != None):
+                        transformed_start_wall = clipped_start_wall;
+                        wall_start_angle = normalise_angle(math.atan2(transformed_start_wall.y, transformed_start_wall.x) - math.pi / 2)
+
+                    if (clipped_end_wall != None):
+                        transformed_end_wall = clipped_end_wall;
+                        wall_end_angle = normalise_angle(math.atan2(transformed_end_wall.y, transformed_end_wall.x) - math.pi / 2)
                 
-                pygame.draw.line(target, colour, (p1.position.x*10, p1.position.y*10), (p2.position.x*10, p2.position.y*10))
+                # Wall is facing away from player, apply back-face culling and thus do not render the wall
+                if wall_start_angle < wall_end_angle:
+                    continue
+
+                # If both wall points are together on one side of the view frustum, do not render the wall
+                if (wall_start_angle < -(HFOV / 2) and wall_end_angle < -(HFOV / 2)) or (wall_start_angle > (HFOV / 2) and wall_end_angle > (HFOV / 2)):
+                    continue
+
+                # Calculate the x positions of the wall on screen
+                screen_start_x = screen_angle_to_x(wall_start_angle)
+                screen_end_x = screen_angle_to_x(wall_end_angle)
+
+                # Only draw points within the portal
+                if screen_start_x > portal.end_x:
+                    continue
+
+                if screen_end_x < portal.start_x:
+                    continue
+
+                # Get the floor and ceiling of this sector
+                sector_floor = sector.floor
+                sector_ceiling = sector.ceiling
+                
+                # Get the floor and ceiling height of the next sector if the wall is a portal
+                next_sector_floor = 0
+                next_sector_ceiling = 0
+
+                if wall_start.next_sector != -1:
+                    next_sector_floor = sectors[wall_start.next_sector].floor
+                    next_sector_ceiling = sectors[wall_start.next_sector].ceiling
+
+                # Calculate the y positions of the wall on screen by projecting the points in 3D
+                # Avoid division by zero error
+                if transformed_start_wall.y != 0:
+                    scaled_start_y = VFOV * VIEW_HEIGHT / transformed_start_wall.y
+                else:
+                    scaled_start_y = VFOV * VIEW_HEIGHT / 0.000001
+
+                if transformed_end_wall.y != 0:
+                    scaled_end_y = VFOV * VIEW_HEIGHT / transformed_end_wall.y
+                else:
+                    scaled_end_y = VFOV * VIEW_HEIGHT / 0.000001
+                
+                # Calculate the y values for the floor and ceiling of the player's sector
+
+                # ~~ ERROR HERE ~~
+
+                floor_screen_y = screen_height_to_y(scaled_start_y, sector.floor, player), screen_height_to_y(scaled_end_y, sector.floor, player)  
+                ceiling_screen_y = screen_height_to_y(scaled_start_y, sector.ceiling, player), screen_height_to_y(scaled_end_y, sector.ceiling, player)
+
+                # Calculate the y values for the floor and ceiling of the next sector
+                portal_floor_screen_y = screen_height_to_y(scaled_start_y, next_sector_floor, player), screen_height_to_y(scaled_end_y, next_sector_floor, player)
+                portal_ceiling_screen_y = screen_height_to_y(scaled_start_y, next_sector_ceiling, player), screen_height_to_y(scaled_end_y, next_sector_ceiling, player)
+
+                # Loop over the x cordinates and draw a line
+                for x in range(clamp(screen_start_x, portal.start_x, portal.end_x), clamp(screen_end_x, portal.start_x, portal.end_x) + 1):
+                    # Avoid division by zero error
+                    d = (screen_end_x - screen_start_x)
+                    if d == 0:
+                        d = 0.000001
+                    
+                    # Calculate the progress on the x
+                    x_progress = (x - screen_start_x) / d
+
+                    # Calculate the y for the given x
+                    floor_y = clamp(x_progress * (floor_screen_y[1] - floor_screen_y[0]) + floor_screen_y[0], y_bottom[x], y_top[x])
+                    ceiling_y = clamp(x_progress * (ceiling_screen_y[1] - ceiling_screen_y[0]) + ceiling_screen_y[0], y_bottom[x], y_top[x])
+
+                    # Draw the ceiling
+                    if ceiling_y < y_top[x]:
+                        pygame.draw.line(target, pygame.Color("red"), (VIEW_WIDTH - x - 1, ceiling_y), (VIEW_WIDTH - x - 1, y_top[x]) )
+
+                    # Draw the floor
+                    if floor_y > y_bottom[x]:
+                        pygame.draw.line(target, pygame.Color("green"), (VIEW_WIDTH - x - 1, y_bottom[x]), (VIEW_WIDTH - x - 1, floor_y))
+
+                    # If this wall is a portal, draw the top and bottom wall
+                    if wall_start.next_sector != -1:
+                        # Calculate the y for the given x for the next sector
+                        portal_floor_y = clamp(x_progress * (portal_floor_screen_y[1] - portal_floor_screen_y[0]) + portal_floor_screen_y[0], y_bottom[x], y_top[x])
+                        portal_ceiling_y = clamp(x_progress * (portal_ceiling_screen_y[1] - portal_ceiling_screen_y[0]) + portal_ceiling_screen_y[0], y_bottom[x], y_top[x])
+
+                        # If this sector's ceiling is higher than the next sector's ceiling, draw the upper wall
+                        if sector_ceiling > next_sector_ceiling:
+                            pygame.draw.line(target, pygame.Color("pink"), (VIEW_WIDTH - x - 1, portal_ceiling_y), (VIEW_WIDTH - x - 1, ceiling_y) )
+
+                        # If this sector's floor is lower than the next sector's floor, draw the lower wall
+                        if sector_floor < next_sector_floor:
+                            pygame.draw.line(target, pygame.Color("yellow"), (VIEW_WIDTH - x - 1, floor_y), (VIEW_WIDTH - x - 1, portal_floor_y))
+
+                        # We need to set the portal dimensions so that in the next loop only walls within that new area are considered
+                        y_top[x] = clamp(min(min(ceiling_y, portal_ceiling_y), y_top[x]), 0, VIEW_HEIGHT - 1)
+                        y_bottom[x] = clamp(max(max(floor_y, portal_floor_y), y_bottom[x]), 0, VIEW_HEIGHT - 1)
+                    else:
+                        # Draw the wall
+                        pygame.draw.line(target, pygame.Color("blue"), (VIEW_WIDTH - x - 1, floor_y), (VIEW_WIDTH - x - 1, ceiling_y))
+
+                # Push the next sector to be rendered onto the stack
+                if wall_start.next_sector != -1:
+                    stack.push(Portal(wall_start.next_sector, clamp(screen_start_x, portal.start_x, portal.end_x), clamp(screen_end_x, portal.start_x, portal.end_x)))
+
+        #endregion
 
         ''' 
         OBJECTIVE 2: Allow for a scalable window
