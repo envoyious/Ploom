@@ -63,14 +63,31 @@ def intersect(line_one_start, line_one_end, line_two_start, line_two_end):
     else:
         return None
 
-# Convert angle in -HFOV / 2 to HFOV / 2 into a x coordinate
+# Convert angle in (-HFOV / 2) to (HFOV / 2) into a x coordinate
+
+# This changes how each angle withing the FOV is seen. The fish eye view calculation is correct to life 
+# as it takes into consideration the curvature of the eyeball so the angle directly infront of the camera 
+# is shorter than the edges of the wall to the left and right. Linear view calculates the progression 
+# from the first point to the second linearly and does not consider the distance from the camera. Flatten
+# view dicreases distortion by using the perpendicular distance of the point from the camera so that flat 
+# walls do not change in size when moving and rotating
+
+# Fish eye view
+#def screen_angle_to_x(angle):
+#    return int(-(VIEW_WIDTH / 2) / math.sin(HFOV / 2) * math.sin(angle) + VIEW_WIDTH / 2)
+
+# Linear view
+#def screen_angle_to_x(angle):
+#    return int((VIEW_WIDTH / 2) - angle / (HFOV / 2) * VIEW_WIDTH / 2)
+
+# Flatten view
 def screen_angle_to_x(angle):
-    return int(VIEW_WIDTH // 2 * (1 - math.tan(((angle + (HFOV / 2)) / HFOV) * (math.pi / 2) - (math.pi / 4))))
+    return int((-math.tan(math.pi * angle / (2 * HFOV)) + 1) * VIEW_WIDTH / 2)
+
 
 # Convert ceiling and floor heights into a y coordinate
 def screen_height_to_y(scaled_y, height, player):
-    return (VIEW_HEIGHT / 2) + int((height - player.position.z) * scaled_y)
-
+    return int(VIEW_HEIGHT / 2 + (height - player.position.z) * scaled_y)
 
 # -1 right, 1 left given a point and a line
 def point_side(point, line_start, line_end):
@@ -316,6 +333,7 @@ def main():
         # Keep track of whether or not a sector has been drawn
         rendered_sectors = [False for i in range(num_sectors)]
 
+        # Keep track of where on the screen a portal is for each x value
         y_bottom = [0 for i in range(VIEW_WIDTH)]
         y_top = [VIEW_WIDTH - 1 for i in range(VIEW_WIDTH)]
 
@@ -357,7 +375,7 @@ def main():
                 transformed_start_wall = transform(wall_start, player, player.angle)
                 transformed_end_wall = transform(wall_end, player, player.angle)
 
-                # Both wall points are bend the player, do not render the wall
+                # Both wall points are behind the player, do not render the wall
                 if transformed_start_wall.y <= 0 and transformed_end_wall.y <= 0:
                     continue
 
@@ -377,11 +395,11 @@ def main():
 
                     # The angle between the wall and the y axis needs to be recalculated if the wall were clipped
                     if (clipped_start_wall != None):
-                        transformed_start_wall = clipped_start_wall;
+                        transformed_start_wall = clipped_start_wall
                         wall_start_angle = normalise_angle(math.atan2(transformed_start_wall.y, transformed_start_wall.x) - math.pi / 2)
 
                     if (clipped_end_wall != None):
-                        transformed_end_wall = clipped_end_wall;
+                        transformed_end_wall = clipped_end_wall
                         wall_end_angle = normalise_angle(math.atan2(transformed_end_wall.y, transformed_end_wall.x) - math.pi / 2)
                 
                 # Wall is facing away from player, apply back-face culling and thus do not render the wall
@@ -389,7 +407,7 @@ def main():
                     continue
 
                 # If both wall points are together on one side of the view frustum, do not render the wall
-                if (wall_start_angle < -(HFOV / 2) and wall_end_angle < -(HFOV / 2)) or (wall_start_angle > (HFOV / 2) and wall_end_angle > (HFOV / 2)):
+                if (wall_start_angle < (-HFOV / 2) and wall_end_angle < (-HFOV / 2)) or (wall_start_angle > (HFOV / 2) and wall_end_angle > (HFOV / 2)):
                     continue
 
                 # Calculate the x positions of the wall on screen
@@ -449,9 +467,10 @@ def main():
                     floor_y = clamp(x_progress * (floor_screen_y[1] - floor_screen_y[0]) + floor_screen_y[0], y_bottom[x], y_top[x])
                     ceiling_y = clamp(x_progress * (ceiling_screen_y[1] - ceiling_screen_y[0]) + ceiling_screen_y[0], y_bottom[x], y_top[x])
 
-                    # Pygame's origin point is at the top-left of the screen,
-                    # to convert the calculated coordinates which have an origin at the bottom-left
-                    # the viewing width/height - 1 (as pixels start from 0) is taken away by x/y
+                    # The image given back to us is reversed on the x axis and y axis, this is beacause of the way cameras 
+                    # work and we have to flip the screen back to being the right way up and flipped on the the  axis for it
+                    # to be correct. To convert the calculated coordinates the viewing width/height - 1 (as pixels start from
+                    # 0) is taken away by the x/y and the pixel is drawn at the resultant point
 
                     # Draw the ceiling
                     if ceiling_y < y_top[x]:
