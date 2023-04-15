@@ -11,7 +11,7 @@
     "znear": 0.000001,
     "zfar": 100,
     "playerHeight": 2.4,
-    "sensitivity": 0.00086,
+    "sensitivity": 0.00046,
     "sensitivityMultiplier": 30.25,
-    "playerSpeed": 0.06
+    "playerSpeed": 4
 }

@@ -6,138 +6,20 @@ import pygame, pygame.draw
 import json
 
 from settings import SETTINGS
-
-# Clamp the value to the inclusive range of min and max.
-def clamp(value, min_value, max_value):
-        return min(max(value, min_value), max_value)
-         
-# Transforms point a to be relative player
-def translate(point, player):
-    return pygame.Vector2(point.position.x - player.position.x, point.position.y - player.position.y)
-
-# Rotate a point given an angle
-def rotate(point, angle):
-    return pygame.Vector2(point.x * math.sin(angle) - point.y * math.cos(angle), point.x * math.cos(angle) + point.y * math.sin(angle))
-
-# Transforms position from world space into viewport space
-def transform(point, player, angle):
-    point = translate(point, player)
-    return rotate(point, angle)
-
-# Normalises angle to between -pi and pi
-def normalise_angle(angle):
-    return angle - (2 * math.pi) * math.floor((angle + math.pi) / (2 * math.pi))
-
-# Calculates intersection point given two segments, returns (None, None) if no intersection
-def intersect(line_one_start, line_one_end, line_two_start, line_two_end):
-    # When the two lines are parallel or coincident, the denominator is zero.
-    d = ((line_one_start.x - line_one_end.x) * (line_two_start.y - line_two_end.y)) - ((line_one_start.y - line_one_end.y) * (line_two_start.x - line_two_end.x))
-
-    # The denominator, d, is checked before calculation to avoid divison by zero error
-    if abs(d) < 0.000001: 
-        return None
-
-    t = (((line_one_start.x - line_two_start.x) * (line_two_start.y - line_two_end.y)) - ((line_one_start.y - line_two_start.y) * (line_two_start.x - line_two_end.x))) / d
-    u = (((line_one_start.x - line_two_start.x) * (line_one_start.y - line_one_end.y)) - ((line_one_start.y - line_two_start.y) * (line_one_start.x - line_one_end.x))) / d
-
-    if t >= 0 and t <= 1 and u >= 0 and u <= 1:
-        return pygame.Vector2(line_one_start.x + (t * (line_one_end.x - line_one_start.x)), line_one_start.y + (t * (line_one_end.y - line_one_start.y)))
-    else:
-        return None
-
-# Convert angle in (-HFOV / 2) to (HFOV / 2) into a x coordinate
-
-# This changes how each angle withing the FOV is seen. The fish eye view calculation is correct to life 
-# as it takes into consideration the curvature of the eyeball so the angle directly infront of the camera 
-# is shorter than the edges of the wall to the left and right. Linear view calculates the progression 
-# from the first point to the second linearly and does not consider the distance from the camera. Flatten
-# view dicreases distortion by using the perpendicular distance of the point from the camera so that flat 
-# walls do not change in size when moving and rotating
-
-# Fish eye view
-#def screen_angle_to_x(angle):
-#    return int(-(VIEW_WIDTH / 2) / math.sin(HFOV / 2) * math.sin(angle) + VIEW_WIDTH / 2)
-
-# Linear view
-#def screen_angle_to_x(angle):
-#    return int((VIEW_WIDTH / 2) - angle / (HFOV / 2) * VIEW_WIDTH / 2)
-
-# Flatten view
-def screen_angle_to_x(angle):
-    return int((-math.tan(math.pi * angle / (2 * SETTINGS["hfov"])) + 1) * SETTINGS["viewWidth"] / 2)
-
-
-# Convert ceiling and floor heights into a y coordinate
-def screen_height_to_y(scaled_y, height, player):
-    return int(SETTINGS["viewHeight"] / 2 + (height - player.position.z) * scaled_y)
-
-# -1 right, 1 left given a point and a line
-def point_side(point, line_start, line_end):
-    return math.copysign(1, (line_end.x - line_start.x) * (point.y - line_start.y) - (line_end.y - line_start.y) * (point.x - line_start.x))
-
-# Point is in sector if it is on the left side of all walls
-def point_in_sector(point, sector, walls):
-    for i in range(sector.num_walls):
-        wall_start = walls[sector.start_wall + i]
-
-        # Make sure the sector does not contain any walls from a different sector
-        n = sector.start_wall + i + 1
-        if n >= sector.start_wall + sector.num_walls:
-            n = sector.start_wall
-        
-        wall_end = walls[n] 
-
-        if point_side(point, wall_start.position, wall_end.position) > 0:
-            return False
-    return True
-
-class Queue:
-    def __init__(self, items: list = list()):
-        self.__list = items
-
-    def enqueue(self, item):
-        self.__list.append(item)
-
-    def dequeue(self):
-        self.__list.pop(0)
-
-    def peek(self):
-        return self.__list[0]
-
-    def __getitem__(self, index):
-        return self.__list[index]
-    
-    def __len__(self):
-         return len(self.__list)
-    
-class Stack:
-    def __init__(self, items: list = list()):
-        self.__list = items
-
-    def push(self, item):
-        self.__list.append(item)
-
-    def pop(self):
-        self.__list.pop(-1)
-
-    def peek(self):
-        return self.__list[-1]
-
-    def __getitem__(self, index):
-        return self.__list[index]
-    
-    def __len__(self):
-         return len(self.__list)
+from utility import *
     
 class Frustum:
     def __init__(self, angle):
         left = rotate(pygame.Vector2(0, 1), math.pi / 2 - (angle / 2))
         right = rotate(pygame.Vector2(0, 1), math.pi / 2 - (-angle / 2))
 
-        self.near_left = pygame.Vector2(left.x * SETTINGS["znear"], left.y * SETTINGS["znear"])
-        self.far_left = pygame.Vector2(left.x * SETTINGS["zfar"], left.y * SETTINGS["zfar"])
-        self.near_right = pygame.Vector2(right.x * SETTINGS["znear"], right.y * SETTINGS["znear"])
-        self.far_right = pygame.Vector2(right.x * SETTINGS["zfar"], right.y * SETTINGS["zfar"])
+        znear = SETTINGS["znear"]
+        zfar = SETTINGS["zfar"]
+
+        self.near_left = pygame.Vector2(left.x * znear, left.y * znear)
+        self.far_left = pygame.Vector2(left.x * zfar, left.y * zfar)
+        self.near_right = pygame.Vector2(right.x * znear, right.y * znear)
+        self.far_right = pygame.Vector2(right.x * zfar, right.y * zfar)
 
 class Wall:
     def __init__(self, position, next_sector):
@@ -169,8 +51,7 @@ class Player:
     OBJECTIVE 9: Update the player's position
     '''
 
-    def update(self):
-            # TODO: Multiply by delta time to make speed framerate independent
+    def update(self, delta_time):
             mouse_x = pygame.mouse.get_rel()[0]
             keys_down = pygame.key.get_pressed()
 
@@ -178,9 +59,13 @@ class Player:
             OBJECTIVE 9.2: Allow for rotation using the mouse
             '''
 
+            sensitivity = SETTINGS["sensitivity"]
+            sensitivity_multiplier = SETTINGS["sensitivityMultiplier"]
+            player_speed = SETTINGS["playerSpeed"]
+
             # Mouse rotation
             if (pygame.event.get_grab()):
-                self.angle += mouse_x * SETTINGS["sensitivity"]
+                self.angle += mouse_x * sensitivity
 
             '''
             OBJECTIVE 9.1: Allow for movement backwards and forward and strafing using keyboard keys
@@ -188,29 +73,28 @@ class Player:
 
             # Left and right rotation
             if (keys_down[pygame.K_LEFT]):
-                self.angle -= SETTINGS["sensitivity"] * SETTINGS["sensitivityMultiplier"]
-            
+                self.angle -= sensitivity * sensitivity_multiplier
             if (keys_down[pygame.K_RIGHT]):
-                self.angle += SETTINGS["sensitivity"] * SETTINGS["sensitivityMultiplier"]
+                self.angle += sensitivity * sensitivity_multiplier
 
             # Backwards and forwards movement
             if (keys_down[pygame.K_UP] or keys_down[pygame.K_w]):
-                self.position.x += math.cos(self.angle) * SETTINGS["playerSpeed"]
-                self.position.y += math.sin(self.angle) * SETTINGS["playerSpeed"]
+                self.position.x += math.cos(self.angle) * player_speed * delta_time
+                self.position.y += math.sin(self.angle) * player_speed * delta_time
 
             
             if (keys_down[pygame.K_DOWN] or keys_down[pygame.K_s]):
-                self.position.x -= math.cos(self.angle) * SETTINGS["playerSpeed"]
-                self.position.y -= math.sin(self.angle) * SETTINGS["playerSpeed"]
+                self.position.x -= math.cos(self.angle) * player_speed * delta_time
+                self.position.y -= math.sin(self.angle) * player_speed * delta_time
 
             # Strafe left and right
             if (keys_down[pygame.K_a]):
-                self.position.x += math.sin(self.angle) * SETTINGS["playerSpeed"]
-                self.position.y -= math.cos(self.angle) * SETTINGS["playerSpeed"]
+                self.position.x += math.sin(self.angle) * player_speed * delta_time
+                self.position.y -= math.cos(self.angle) * player_speed * delta_time
             
             if (keys_down[pygame.K_d]):
-                self.position.x -= math.sin(self.angle) * SETTINGS["playerSpeed"]
-                self.position.y += math.cos(self.angle) * SETTINGS["playerSpeed"]
+                self.position.x -= math.sin(self.angle) * player_speed * delta_time
+                self.position.y += math.cos(self.angle) * player_speed * delta_time
 
             self.__previous_key = keys_down
 
@@ -303,12 +187,19 @@ def main():
                     pygame.mouse.set_visible(not(pygame.mouse.get_visible()))
                     pygame.event.set_grab(not(pygame.event.get_grab()))
 
+        # Calculate the interval in seconds from the last frame to the current one
         current_time = time.time()
         delta_time = current_time - prev_time
         prev_time = current_time
 
+        viewWidth = SETTINGS["viewWidth"]
+        viewHeight = SETTINGS["viewHeight"]
+
+        hfov = SETTINGS["hfov"]
+        vfov = SETTINGS["vfov"]
+
         # Updating TODO: Seperate into single procedure
-        player.update()
+        player.update(delta_time)
         player.find_sector(sectors, walls)
         player.position.z = sectors[player.sector].floor + SETTINGS["playerHeight"]
 
@@ -322,14 +213,14 @@ def main():
         rendered_sectors = [False for i in range(num_sectors)]
 
         # Keep track of where on the screen a portal is for each x value
-        y_bottom = [0 for i in range(SETTINGS["viewWidth"])]
-        y_top = [SETTINGS["viewWidth"] - 1 for i in range(SETTINGS["viewWidth"])]
+        y_bottom = [0 for i in range(viewWidth)]
+        y_top = [viewWidth - 1 for i in range(viewWidth)]
         
         # Create the view frustum
-        frustum = Frustum(SETTINGS["hfov"])
+        frustum = Frustum(hfov)
 
         # Start rendering at the sector which contains the player
-        stack = Stack([Portal(player.sector, 0, SETTINGS["viewWidth"] - 1)])
+        stack = Stack([Portal(player.sector, 0, viewWidth - 1)])
 
         while len(stack) != 0:
             # The original portal contains the whole screen, every subsequent portal is a smaller portion of the screen
@@ -374,8 +265,8 @@ def main():
                 # If the wall is partially in front of the player, clip it against the view frustum
                 if transformed_start_wall.y < SETTINGS["znear"] \
                     or transformed_end_wall.y < SETTINGS["znear"] \
-                    or wall_start_angle > (SETTINGS["hfov"] / 2) \
-                    or wall_end_angle < (-SETTINGS["hfov"] / 2): \
+                    or wall_start_angle > (hfov / 2) \
+                    or wall_end_angle < (-hfov / 2): \
                     
                     # Intersect the wall with the frustum and clip it down to be only within the frustum
                     clipped_start_wall = intersect(transformed_start_wall, transformed_end_wall, frustum.near_left, frustum.far_left)
@@ -395,7 +286,7 @@ def main():
                     continue
 
                 # If both wall points are together on one side of the view frustum, do not render the wall
-                if (wall_start_angle < (-SETTINGS["hfov"] / 2) and wall_end_angle < (-SETTINGS["hfov"] / 2)) or (wall_start_angle > (SETTINGS["hfov"] / 2) and wall_end_angle > (SETTINGS["hfov"] / 2)):
+                if (wall_start_angle < (-hfov / 2) and wall_end_angle < (-hfov / 2)) or (wall_start_angle > (hfov / 2) and wall_end_angle > (hfov / 2)):
                     continue
 
                 # Calculate the x positions of the wall on screen
@@ -424,14 +315,14 @@ def main():
                 # Calculate the y positions of the wall on screen by projecting the points in 3D
                 # Avoid division by zero error
                 if transformed_start_wall.y != 0:
-                    scaled_start_y = SETTINGS["vfov"] * SETTINGS["viewHeight"] / transformed_start_wall.y
+                    scaled_start_y = vfov * viewHeight / transformed_start_wall.y
                 else:
-                    scaled_start_y = SETTINGS["vfov"] * SETTINGS["viewHeight"] / 0.000001
+                    scaled_start_y = vfov * viewHeight / 0.000001
 
                 if transformed_end_wall.y != 0:
-                    scaled_end_y = SETTINGS["vfov"] * SETTINGS["viewHeight"] / transformed_end_wall.y
+                    scaled_end_y = vfov * viewHeight / transformed_end_wall.y
                 else:
-                    scaled_end_y = SETTINGS["vfov"] * SETTINGS["viewHeight"] / 0.000001
+                    scaled_end_y = vfov * viewHeight / 0.000001
                 
                 # Calculate the y values for the floor and ceiling of the player's sector
                 floor_screen_y = screen_height_to_y(scaled_start_y, sector.floor, player), screen_height_to_y(scaled_end_y, sector.floor, player)  
@@ -463,14 +354,14 @@ def main():
                     # Draw the ceiling
                     if ceiling_y < y_top[x]:
                         pygame.draw.line(target, pygame.Color("red"), 
-                                         (SETTINGS["viewWidth"] - 1 - x, SETTINGS["viewHeight"] - 1 - ceiling_y), 
-                                         (SETTINGS["viewWidth"] - 1 - x, SETTINGS["viewHeight"] - 1 - y_top[x]) )
+                                         (viewWidth - 1 - x, viewHeight - 1 - ceiling_y), 
+                                         (viewWidth - 1 - x, viewHeight - 1 - y_top[x]) )
 
                     # Draw the floor
                     if floor_y > y_bottom[x]:
                         pygame.draw.line(target, pygame.Color("green"), 
-                                         (SETTINGS["viewWidth"] - 1 - x, SETTINGS["viewHeight"] - 1 - y_bottom[x]), 
-                                         (SETTINGS["viewWidth"] - 1 - x, SETTINGS["viewHeight"] - 1 - floor_y))
+                                         (viewWidth - 1 - x, viewHeight - 1 - y_bottom[x]), 
+                                         (viewWidth - 1 - x, viewHeight - 1 - floor_y))
 
                     # If this wall is a portal, draw the top and bottom wall
                     if wall_start.next_sector != -1:
@@ -481,21 +372,23 @@ def main():
                         # If this sector's ceiling is higher than the next sector's ceiling, draw the upper wall
                         if sector_ceiling > next_sector_ceiling:
                             pygame.draw.line(target, pygame.Color("pink"), 
-                                             (SETTINGS["viewWidth"] - 1 - x, SETTINGS["viewHeight"] - 1 - portal_ceiling_y), 
-                                             (SETTINGS["viewWidth"] - 1 - x, SETTINGS["viewHeight"] - 1 - ceiling_y) )
+                                             (viewWidth - 1 - x, viewHeight - 1 - portal_ceiling_y), 
+                                             (viewWidth - 1 - x, viewHeight - 1 - ceiling_y) )
 
                         # If this sector's floor is lower than the next sector's floor, draw the lower wall
                         if sector_floor < next_sector_floor:
-                            pygame.draw.line(target, pygame.Color("yellow"), (SETTINGS["viewWidth"] - 1 - x, SETTINGS["viewHeight"] - 1 - floor_y), (SETTINGS["viewWidth"] - 1 - x, SETTINGS["viewHeight"] - 1 - portal_floor_y))
+                            pygame.draw.line(target, pygame.Color("yellow"), 
+                                             (viewWidth - 1 - x, viewHeight - 1 - floor_y), 
+                                             (viewWidth - 1 - x, viewHeight - 1 - portal_floor_y))
 
                         # We need to set the portal dimensions so that in the next loop only walls within that new area are considered
-                        y_top[x] = clamp(min(min(ceiling_y, portal_ceiling_y), y_top[x]), 0, SETTINGS["viewHeight"] - 1)
-                        y_bottom[x] = clamp(max(max(floor_y, portal_floor_y), y_bottom[x]), 0, SETTINGS["viewHeight"] - 1)
+                        y_top[x] = clamp(min(min(ceiling_y, portal_ceiling_y), y_top[x]), 0, viewHeight - 1)
+                        y_bottom[x] = clamp(max(max(floor_y, portal_floor_y), y_bottom[x]), 0, viewHeight - 1)
                     else:
                         # Draw the wall
                         pygame.draw.line(target, pygame.Color("blue"), 
-                                         (SETTINGS["viewWidth"] - 1 - x, SETTINGS["viewHeight"] - 1 - floor_y), 
-                                         (SETTINGS["viewWidth"] - 1 - x, SETTINGS["viewHeight"] - 1 - ceiling_y))
+                                         (viewWidth - 1 - x, viewHeight - 1 - floor_y), 
+                                         (viewWidth - 1 - x, viewHeight - 1 - ceiling_y))
 
                 # Push the next sector to be rendered onto the stack
                 if wall_start.next_sector != -1:
@@ -530,10 +423,10 @@ def main():
         #region Render target resizing
 
         window_width, window_height = graphics.get_size()
-        scale = min(window_width / SETTINGS["viewWidth"], window_height / SETTINGS["viewHeight"])
+        scale = min(window_width / viewWidth, window_height / viewHeight)
 
-        bar_width = int((window_width - int(SETTINGS["viewWidth"] * scale)) / 2)
-        bar_height = int((window_height - int(SETTINGS["viewHeight"] * scale)) / 2)
+        bar_width = int((window_width - int(viewWidth * scale)) / 2)
+        bar_height = int((window_height - int(viewHeight * scale)) / 2)
 
         '''
         OBJECTIVE 2.1: Resize all content within window to correct size 
@@ -541,7 +434,7 @@ def main():
 
         if SETTINGS["letterbox"]:
             # Adds black bars to either side of the screen
-            resized = pygame.transform.scale(target, (int(SETTINGS["viewWidth"] * scale), int(SETTINGS["viewHeight"] * scale)))
+            resized = pygame.transform.scale(target, (int(viewWidth * scale), int(viewHeight * scale)))
             graphics.blit(resized, (bar_width, bar_height))
         else:
             # Stretches image to fill the whole screen
