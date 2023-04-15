@@ -1,4 +1,4 @@
-# PLOOM, 0.2 WIP
+# PLOOM, 0.3 WIP
 # Developed by Zain Akram
 
 import math
