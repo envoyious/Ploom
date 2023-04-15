@@ -1,0 +1,17 @@
+{
+    "windowWidth": 640,
+    "windowHeight": 360,
+    "viewWidth": 320,
+    "viewHeight": 180,
+    "clearColour": "cornflower blue",
+    "letterbox": true,
+    "framerate": 60,
+    "hfov": 103,
+    "vfov": 15,
+    "znear": 0.000001,
+    "zfar": 100,
+    "playerHeight": 2.4,
+    "sensitivity": 0.00086,
+    "sensitivityMultiplier": 30.25,
+    "playerSpeed": 0.06
+}
