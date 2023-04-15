@@ -1,9 +1,9 @@
 # PLOOM, 0.1 WIP
 # Developed by Zain Akram
 
-import sys, math
-import json
+import sys, math, time
 import pygame, pygame.draw
+import json
 
 # Screen size
 WINDOW_WIDTH = 640
@@ -12,6 +12,7 @@ VIEW_WIDTH = 320
 VIEW_HEIGHT = 180
 
 CLEAR_COLOR = (pygame.Color("cornflower blue"))
+LETTERBOX = True
 
 # Engine
 FRAMERATE = 60
@@ -21,6 +22,7 @@ ZNEAR = 0.000001
 ZFAR = 100
 
 # Gameplay TODO: Create object to handle state. Needs to be writeable not constants
+PLAYER_HEIGHT = 2.4
 SENSITIVITY = 0.00086
 MULTIPLIER = 30.25
 SPEED = 0.06
@@ -304,9 +306,11 @@ def main():
     target = pygame.Surface((VIEW_WIDTH, VIEW_HEIGHT))
     pygame.event.set_grab(True)
 
+    prev_time = time.time()
+    delta_time = 0
 
     sectors, walls, num_sectors = load_map("content/map.json")
-    player = Player(pygame.Vector3(8, 4, 1.65), 0)
+    player = Player(pygame.Vector3(8, 4, 0), 0)
 
     # Main loop
     is_running = True
@@ -319,13 +323,17 @@ def main():
                     pygame.mouse.set_visible(not(pygame.mouse.get_visible()))
                     pygame.event.set_grab(not(pygame.event.get_grab()))
 
+        current_time = time.time()
+        delta_time = current_time - prev_time
+        prev_time = current_time
+
         # Updating TODO: Seperate into single procedure
         player.update()
         player.find_sector(sectors, walls)
-        player.position.z = sectors[player.sector].floor + 2.4
+        player.position.z = sectors[player.sector].floor + PLAYER_HEIGHT
 
         # Rendering TODO: Seperate into single procedure
-        graphics.fill(pygame.Color("black"))        
+        graphics.fill(pygame.Color("black"))
         target.fill(CLEAR_COLOR)
 
         #region Render walls
@@ -543,12 +551,17 @@ def main():
         OBJECTIVE 2.1: Resize all content within window to correct size 
         '''
 
-        resized = pygame.transform.scale(target, (int(VIEW_WIDTH * scale), int(VIEW_HEIGHT * scale)))
-        graphics.blit(resized, (bar_width, bar_height))
+        if LETTERBOX:
+            # Adds black bars to either side of the screen
+            resized = pygame.transform.scale(target, (int(VIEW_WIDTH * scale), int(VIEW_HEIGHT * scale)))
+            graphics.blit(resized, (bar_width, bar_height))
+        else:
+            # Stretches image to fill the whole screen
+            resized = pygame.transform.scale(target, (window_width, window_height))
+            graphics.blit(resized, (0, 0))
 
         #endregion
         
-
         pygame.display.update()
 
         # Cap the framerate at 60 frames per second
