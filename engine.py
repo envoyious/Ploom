@@ -22,6 +22,9 @@ class Engine:
     # Abstract methods
     def initialise(self):
         pass
+
+    def load_content(self):
+        pass
     
     def update(self, delta_time):
         pass
@@ -43,6 +46,8 @@ class Engine:
         self._graphics.set_alpha(None)
 
         pygame.event.set_grab(self._mouse_grab)
+
+        self.load_content()
 
         prev_time = time.time()
         delta_time = 0
@@ -75,6 +80,9 @@ class Engine:
 class Scene:
     def __init__(self):
         self.target = pygame.Surface((640, 360))
+
+    def load_content(self):
+        pass
 
     def update(self, delta_time):
         pass

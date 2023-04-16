@@ -3,7 +3,8 @@
     "windowHeight": 360,
     "viewWidth": 320,
     "viewHeight": 180,
-    "clearColour": "cornflower blue",
+    "clearColour": "#6495ED",
+    "menuColour": "#1B0F27",
     "letterbox": true,
     "framerate": 60,
     "hfov": 103,
@@ -13,5 +14,6 @@
     "playerHeight": 2.4,
     "sensitivity": 0.00046,
     "sensitivityMultiplier": 30.25,
-    "playerSpeed": 4
+    "playerSpeed": 4,
+    "menuSpin": true
 }

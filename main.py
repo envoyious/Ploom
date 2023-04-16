@@ -5,6 +5,7 @@ import pygame, pygame.draw
 
 from engine import Engine
 from game import Game
+from menu import Menu
 from settings import SETTINGS
 
 class App(Engine):
@@ -21,7 +22,12 @@ class App(Engine):
         self._mouse_grab = True
         self._framerate = SETTINGS["framerate"]
 
-        self.scene = Game("content/map.json")
+        #self.scene = Game("content/map.json")
+        self.scene = Menu()
+
+    def load_content(self):
+        self.scene.load_content()
+        super().load_content()
 
     def update(self, delta_time):
         self.scene.update(delta_time)

@@ -6,8 +6,11 @@ import pygame, pygame.draw
 import json
 
 from engine import Scene
+# from font import Font
 from settings import SETTINGS
 from utility import *
+
+# TEXT = pygame.Rect(0, 9, 216, 9)
 
 class Frustum:
     def __init__(self, angle):
@@ -149,6 +152,12 @@ class Game(Scene):
         # Create objects
         self.sectors, self.walls, self.num_sectors = load_map(path)
         self.player = Player(pygame.Vector3(8, 4, 0), 0)
+        # self.font = None
+
+    # def load_content(self):
+    #     self.textures = pygame.image.load("content/textures.png").convert_alpha()
+    #     self.font = Font(self.textures.subsurface(TEXT))
+    #     super().load_content()
 
     def update(self, delta_time):
         # Update the player
@@ -313,13 +322,13 @@ class Game(Scene):
 
                     # Draw the ceiling
                     if ceiling_y < y_top[x]:
-                        pygame.draw.line(self.target, pygame.Color("red"), 
+                        pygame.draw.line(self.target, pygame.Color("#B8D0EB"), 
                                          (viewWidth - 1 - x, viewHeight - 1 - ceiling_y), 
                                          (viewWidth - 1 - x, viewHeight - 1 - y_top[x]) )
 
                     # Draw the floor
                     if floor_y > y_bottom[x]:
-                        pygame.draw.line(self.target, pygame.Color("green"), 
+                        pygame.draw.line(self.target, pygame.Color("#A663CC"), 
                                          (viewWidth - 1 - x, viewHeight - 1 - y_bottom[x]), 
                                          (viewWidth - 1 - x, viewHeight - 1 - floor_y))
 
@@ -331,13 +340,13 @@ class Game(Scene):
 
                         # If this sector's ceiling is higher than the next sector's ceiling, draw the upper wall
                         if sector_ceiling > next_sector_ceiling:
-                            pygame.draw.line(self.target, pygame.Color("pink"), 
+                            pygame.draw.line(self.target, pygame.Color("#D3F3EE"), 
                                              (viewWidth - 1 - x, viewHeight - 1 - portal_ceiling_y), 
                                              (viewWidth - 1 - x, viewHeight - 1 - ceiling_y) )
 
                         # If this sector's floor is lower than the next sector's floor, draw the lower wall
                         if sector_floor < next_sector_floor:
-                            pygame.draw.line(self.target, pygame.Color("yellow"), 
+                            pygame.draw.line(self.target, pygame.Color("#B298DC"), 
                                              (viewWidth - 1 - x, viewHeight - 1 - floor_y), 
                                              (viewWidth - 1 - x, viewHeight - 1 - portal_floor_y))
 
@@ -346,7 +355,7 @@ class Game(Scene):
                         y_bottom[x] = clamp(max(max(floor_y, portal_floor_y), y_bottom[x]), 0, viewHeight - 1)
                     else:
                         # Draw the wall
-                        pygame.draw.line(self.target, pygame.Color("blue"), 
+                        pygame.draw.line(self.target, pygame.Color("#6F2DBD"), 
                                          (viewWidth - 1 - x, viewHeight - 1 - floor_y), 
                                          (viewWidth - 1 - x, viewHeight - 1 - ceiling_y))
 
@@ -355,5 +364,12 @@ class Game(Scene):
                     stack.push(Portal(wall_start.next_sector, clamp(screen_start_x, portal.start_x, portal.end_x), clamp(screen_end_x, portal.start_x, portal.end_x)))
 
         #endregion
+
+        # pygame.draw.rect(self.target, pygame.Color("#A663CC"), pygame.Rect(128, 95, 59, 35), 1)
+
+        # self.font.render(self.target, "START", pygame.Vector2(130, 96), pygame.Color("#B298DC"))
+        # self.font.render(self.target, "OPTIONS", pygame.Vector2(130, 96 + 8), pygame.Color("#A663CC"))
+        # self.font.render(self.target, "ABOUT", pygame.Vector2(130, 96 + 16), pygame.Color("#A663CC"))
+        # self.font.render(self.target, "EXIT", pygame.Vector2(130, 96 + 24), pygame.Color("#A663CC"))
 
         super().render()
