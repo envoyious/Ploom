@@ -6,7 +6,7 @@ import pygame
 class Font:
     def __init__(self, texture):
         self.__char_width = 8
-        self.__char_order = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 "
+        self.__char_order = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789%° "
         self.__characters = {}
 
         self.spacing = 0

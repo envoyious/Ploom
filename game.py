@@ -11,7 +11,7 @@ from options import Options
 from settings import SETTINGS
 from utility import *
 
-TEXT = pygame.Rect(0, 9, 296, 9)
+TEXT = pygame.Rect(0, 9, 312, 9)
 
 class Frustum:
     def __init__(self, angle):
@@ -56,13 +56,13 @@ class Player:
             mouse_x = pygame.mouse.get_rel()[0]
             keys_down = pygame.key.get_pressed()
 
-            sensitivity = SETTINGS["sensitivity"]
-            sensitivity_multiplier = SETTINGS["sensitivityMultiplier"]
-            player_speed = SETTINGS["playerSpeed"]
+            sensitivity = SETTINGS["baseSensitivity"] * SETTINGS["sensitivityMultiplier"]
+            sensitivity_multiplier = SETTINGS["keyboardSensitivityMultiplier"]
+            player_speed = SETTINGS["basePlayerSpeed"] * SETTINGS["playerSpeedMultiplier"]
 
             # Activate/Deactivate mouse input
             if keys_down[pygame.K_ESCAPE] and not(self.__previous_key[pygame.K_ESCAPE]):
-                pygame.mouse.set_visible(not(pygame.mouse.get_visible()))
+                #pygame.mouse.set_visible(not(pygame.mouse.get_visible()))
                 pygame.event.set_grab(not(pygame.event.get_grab()))
 
             # Mouse rotation
@@ -161,7 +161,7 @@ class Game(Scene):
         pygame.event.set_grab(True)
         self.textures = pygame.image.load("content/textures.png").convert_alpha()
         self.font = Font(self.textures.subsurface(TEXT))
-        self.options = Options(self.font, self.target, self.application)
+        self.options = Options(self.font, self.textures, self.target, self.application)
         # super().load_content()
 
     def update(self, delta_time):
@@ -390,6 +390,11 @@ class Game(Scene):
                 
                 pygame.draw.line(self.target, colour, (p1.position.x*10, p1.position.y*10), (p2.position.x*10, p2.position.y*10))
 
-        self.options.render()
+        if (not(pygame.event.get_grab())):
+            menuColour = pygame.Color(SETTINGS["menuColour"])
+            darken = pygame.Surface((viewWidth, viewHeight), pygame.SRCALPHA)
+            darken.fill((menuColour.r, menuColour.g, menuColour.b, 160))
+            self.target.blit(darken, (0, 0))
+            self.options.render()
 
         super().render()

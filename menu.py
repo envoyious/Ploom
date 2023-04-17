@@ -8,9 +8,7 @@ from font import Font
 from options import Options
 from settings import SETTINGS
 
-NONE = pygame.Rect(0, 0, 9, 9)
-HOVER = pygame.Rect(9, 0, 9, 9)
-TEXT = pygame.Rect(0, 9, 296, 9)
+TEXT = pygame.Rect(0, 9, 312, 9)
 BACKGROUND = pygame.Rect(0, 0, 320, 180)
 
 class Menu(Scene):
@@ -35,7 +33,7 @@ class Menu(Scene):
         self.__textures = pygame.image.load("content/textures.png").convert_alpha()
         self.__background: pygame.Surface = pygame.image.load("content/background.png").convert_alpha()
         self.__font = Font(self.__textures.subsurface(TEXT))
-        self.__options = Options(self.__font, self.target, self.application)
+        self.__options = Options(self.__font, self.__textures, self.target, self.application)
 
     def update(self, delta_time):
         if SETTINGS["menuSpin"]:
@@ -60,26 +58,5 @@ class Menu(Scene):
         self.target.blit(self.__current_image, (0, -40))
 
         self.__options.render()
-
-        #region Draw cursor
-        
-        viewWidth = SETTINGS["viewWidth"]
-        viewHeight = SETTINGS["viewHeight"]
-
-        window_width, window_height = pygame.display.get_surface().get_size()
-        scale = min(window_width / viewWidth, window_height / viewHeight)
-
-        bar_width = int((window_width - int(viewWidth * scale)) / 2)
-        bar_height = int((window_height - int(viewHeight * scale)) / 2)
-
-        mouse_pos = (int((pygame.mouse.get_pos()[0] - bar_width) / scale - 4), int((pygame.mouse.get_pos()[1] - bar_height) / scale - 4))
-        
-        if self.__options.cursor:
-            sprite = self.__textures.subsurface(HOVER)
-        else:
-            sprite = self.__textures.subsurface(NONE)
-        self.target.blit(sprite, mouse_pos)
-
-        #endregion
         
         super().render()
