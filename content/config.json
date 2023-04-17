@@ -15,5 +15,5 @@
     "sensitivity": 0.00046,
     "sensitivityMultiplier": 30.25,
     "playerSpeed": 4,
-    "menuSpin": true
+    "menuSpin": false
 }

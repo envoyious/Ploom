@@ -22,8 +22,12 @@ class App(Engine):
         self._mouse_grab = True
         self._framerate = SETTINGS["framerate"]
 
-        #self.scene = Game("content/map.json")
-        self.scene = Menu()
+        #self.scene = Game(self.instance, "content/map.json")
+        self.scene = Menu(self.instance)
+
+    def load_level(self, path):
+        self.scene = Game(self.instance, path)
+        self.scene.load_content()
 
     def load_content(self):
         self.scene.load_content()

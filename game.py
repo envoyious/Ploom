@@ -6,11 +6,12 @@ import pygame, pygame.draw
 import json
 
 from engine import Scene
-# from font import Font
+from font import Font
+from options import Options
 from settings import SETTINGS
 from utility import *
 
-# TEXT = pygame.Rect(0, 9, 216, 9)
+TEXT = pygame.Rect(0, 9, 296, 9)
 
 class Frustum:
     def __init__(self, angle):
@@ -146,18 +147,22 @@ def load_map(path):
     return sectors, walls, num_sectors
 
 class Game(Scene):
-    def __init__(self, path):
+    def __init__(self, application, path):
+        super().__init__(application)
         self.target = pygame.Surface((SETTINGS["viewWidth"], SETTINGS["viewHeight"]))
 
         # Create objects
         self.sectors, self.walls, self.num_sectors = load_map(path)
         self.player = Player(pygame.Vector3(8, 4, 0), 0)
-        # self.font = None
+        self.font = None
+        self.options = None
 
-    # def load_content(self):
-    #     self.textures = pygame.image.load("content/textures.png").convert_alpha()
-    #     self.font = Font(self.textures.subsurface(TEXT))
-    #     super().load_content()
+    def load_content(self):
+        pygame.event.set_grab(True)
+        self.textures = pygame.image.load("content/textures.png").convert_alpha()
+        self.font = Font(self.textures.subsurface(TEXT))
+        self.options = Options(self.font, self.target, self.application)
+        # super().load_content()
 
     def update(self, delta_time):
         # Update the player
@@ -365,11 +370,26 @@ class Game(Scene):
 
         #endregion
 
-        # pygame.draw.rect(self.target, pygame.Color("#A663CC"), pygame.Rect(128, 95, 59, 35), 1)
+        pygame.draw.line(self.target, pygame.Color("red"), (self.player.position.x * 10, self.player.position.y * 10), (int(math.cos(self.player.angle) * 5 + self.player.position.x * 10), int(math.sin(self.player.angle) * 5 + self.player.position.y * 10)))
+        self.target.set_at((int(self.player.position.x * 10), int(self.player.position.y * 10)), pygame.Color("green"))
 
-        # self.font.render(self.target, "START", pygame.Vector2(130, 96), pygame.Color("#B298DC"))
-        # self.font.render(self.target, "OPTIONS", pygame.Vector2(130, 96 + 8), pygame.Color("#A663CC"))
-        # self.font.render(self.target, "ABOUT", pygame.Vector2(130, 96 + 16), pygame.Color("#A663CC"))
-        # self.font.render(self.target, "EXIT", pygame.Vector2(130, 96 + 24), pygame.Color("#A663CC"))
+        for sector in self.sectors:
+            for i in range(sector.num_walls):
+                p1 = self.walls[sector.start_wall + i]
+
+                n = sector.start_wall + i + 1
+                if n >= sector.start_wall + sector.num_walls:
+                    n = sector.start_wall
+                
+                p2 = self.walls[n] 
+
+                if p1.next_sector == -1:
+                    colour = pygame.Color("black")
+                else:
+                    colour = pygame.Color("red")
+                
+                pygame.draw.line(self.target, colour, (p1.position.x*10, p1.position.y*10), (p2.position.x*10, p2.position.y*10))
+
+        self.options.render()
 
         super().render()

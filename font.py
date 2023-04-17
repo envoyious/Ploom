@@ -1,18 +1,22 @@
+# PLOOM, 0.3 WIP
+# Developed by Zain Akram
+
 import pygame
 
 class Font:
     def __init__(self, texture):
-        self.spacing = 0
         self.__char_width = 8
-        self.__char_order = "ABCDEFGHIJKLMNOPQRSTUVWXYZ "
+        self.__char_order = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 "
         self.__characters = {}
+
+        self.spacing = 0
 
         char_count = 0 
         for x in range(texture.get_width() + 8):
             if x != 0 and x % self.__char_width == 0:
                 char = self.clip(texture, x - self.__char_width, 0, self.__char_width, texture.get_height()) 
                 self.__characters[self.__char_order[char_count]] = char
-                if char_count < 26:
+                if char_count < len(self.__char_order) + 1:
                     char_count += 1
     
     def clip(self, surface, x, y, width, height):

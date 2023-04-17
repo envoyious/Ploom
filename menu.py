@@ -5,15 +5,17 @@ import pygame, pygame.draw
 
 from engine import Scene
 from font import Font
+from options import Options
 from settings import SETTINGS
 
 NONE = pygame.Rect(0, 0, 9, 9)
 HOVER = pygame.Rect(9, 0, 9, 9)
-TEXT = pygame.Rect(0, 9, 216, 9)
+TEXT = pygame.Rect(0, 9, 296, 9)
 BACKGROUND = pygame.Rect(0, 0, 320, 180)
 
 class Menu(Scene):
-    def __init__(self):
+    def __init__(self, application):
+        super().__init__(application)
         self.target = pygame.Surface((SETTINGS["viewWidth"], SETTINGS["viewHeight"]))        
         pygame.mouse.set_visible(False)
 
@@ -22,15 +24,18 @@ class Menu(Scene):
         self.__frame_length = float(1 / 24)
         self.__time_remaining = float(self.__frame_length)
 
-        self.font = None
-        self.textures = None
-        self.background = None
+        # Objects
+        self.__font = None
+        self.__textures = None
+        self.__background = None
+        self.__options = None
 
     def load_content(self):
         pygame.event.set_grab(False)
-        self.textures = pygame.image.load("content/textures.png").convert_alpha()
-        self.background: pygame.Surface = pygame.image.load("content/background.png").convert()
-        self.font = Font(self.textures.subsurface(TEXT))
+        self.__textures = pygame.image.load("content/textures.png").convert_alpha()
+        self.__background: pygame.Surface = pygame.image.load("content/background.png").convert_alpha()
+        self.__font = Font(self.__textures.subsurface(TEXT))
+        self.__options = Options(self.__font, self.target, self.application)
 
     def update(self, delta_time):
         if SETTINGS["menuSpin"]:
@@ -42,22 +47,19 @@ class Menu(Scene):
 
             if self.__frame >= 29:
                 self.__frame = 0
+        else:
+            self.__frame = 0
 
-        self.__current_image = self.background.subsurface(BACKGROUND.x, BACKGROUND.y + self.__frame * BACKGROUND.height, BACKGROUND.width, BACKGROUND.height)
+        self.__current_image = self.__background.subsurface(BACKGROUND.x, BACKGROUND.y + self.__frame * BACKGROUND.height, BACKGROUND.width, BACKGROUND.height)
 
-        return super().update(delta_time)
+        super().update(delta_time)
     
     def render(self):
         self.target.fill(SETTINGS["menuColour"])
 
         self.target.blit(self.__current_image, (0, -40))
 
-        pygame.draw.rect(self.target, pygame.Color("#A663CC"), pygame.Rect(128, 95, 59, 35), 1)
-
-        self.font.render(self.target, "START", pygame.Vector2(130, 96), pygame.Color("#B298DC"))
-        self.font.render(self.target, "OPTIONS", pygame.Vector2(130, 96 + 8), pygame.Color("#A663CC"))
-        self.font.render(self.target, "ABOUT", pygame.Vector2(130, 96 + 16), pygame.Color("#A663CC"))
-        self.font.render(self.target, "EXIT", pygame.Vector2(130, 96 + 24), pygame.Color("#A663CC"))
+        self.__options.render()
 
         #region Draw cursor
         
@@ -72,9 +74,12 @@ class Menu(Scene):
 
         mouse_pos = (int((pygame.mouse.get_pos()[0] - bar_width) / scale - 4), int((pygame.mouse.get_pos()[1] - bar_height) / scale - 4))
         
-        sprite = self.textures.subsurface(NONE)
+        if self.__options.cursor:
+            sprite = self.__textures.subsurface(HOVER)
+        else:
+            sprite = self.__textures.subsurface(NONE)
         self.target.blit(sprite, mouse_pos)
 
         #endregion
         
-        return super().render()
+        super().render()

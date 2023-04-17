@@ -5,7 +5,12 @@ import sys, time
 import pygame, pygame.draw
 
 class Engine:
+    instance = None
+
     def __init__(self):
+        # Static properties
+        self.instance = self
+
         # Protected properties
         self._window_width = 640
         self._window_height = 360
@@ -78,7 +83,8 @@ class Engine:
         sys.exit()        
 
 class Scene:
-    def __init__(self):
+    def __init__(self, application):
+        self.application = application
         self.target = pygame.Surface((640, 360))
 
     def load_content(self):
