@@ -390,6 +390,7 @@ class Game(Scene):
                 
                 pygame.draw.line(self.target, colour, (p1.position.x*10, p1.position.y*10), (p2.position.x*10, p2.position.y*10))
 
+        # Menu
         if (not(pygame.event.get_grab())):
             menuColour = pygame.Color(SETTINGS["menuColour"])
             darken = pygame.Surface((viewWidth, viewHeight), pygame.SRCALPHA)

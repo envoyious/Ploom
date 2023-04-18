@@ -10,7 +10,7 @@
     "hfov": 103,
     "hfovUpperBound": 130,
     "hfovLowerBound": 40, 
-    "vfov": 15,
+    "vfov": 12,
     "vfovUpperBound": 35,
     "vfovLowerBound": 5, 
     "znear": 0.000001,
@@ -18,7 +18,7 @@
     "playerHeight": 2.4,
     "baseSensitivity": 0.00046,
     "sensitivityMultiplier": 1,
-    "keyboardSensitivityMultiplier": 30.25,
+    "keyboardSensitivityMultiplier": 60,
     "basePlayerSpeed": 4,
     "playerSpeedMultiplier": 1,
     "menuSpin": false
