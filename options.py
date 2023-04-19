@@ -155,12 +155,12 @@ class Options():
         self.__application.load_level("content/map.json")
     
     def __options(self, mouse_pos):
-        texts = ["SENSITIVITY", "HFOV", "VFOV", "PLAYER SPEED", "LETTERBOX", "MENU SPIN", "BACK"]
+        texts = ["SENSITIVITY", "FOV", "PLAYER SPEED", "VIEW MODE", "LETTERBOX", "MENU SPIN", "BACK"]
         
         states = [lambda mouse_pos: self.__sensitivity(mouse_pos), 
-                  lambda mouse_pos: self.__hfov(mouse_pos), 
-                  lambda mouse_pos: self.__vfov(mouse_pos),
+                  lambda mouse_pos: self.__fov(mouse_pos), 
                   lambda mouse_pos: self.__player_speed(mouse_pos),
+                  lambda mouse_pos: self.__view_mode(mouse_pos),
                   lambda mouse_pos: self.__letterbox(mouse_pos),
                   lambda mouse_pos: self.__menu_spin(mouse_pos),
                   lambda mouse_pos: self.__menu(mouse_pos)]
@@ -190,12 +190,26 @@ class Options():
         self.__font.render(self.__unscaled, "SENSITIVTY", pygame.Vector2(120, 85), pygame.Color("#A663CC"))
         
         self.__text_handler(mouse_pos, texts, states, rect, "sensitivityMultiplier", True)
-        
+    
+    def __fov(self, mouse_pos):
+        texts = ["HFOV", "VFOV", "BACK"]
+
+        states = [lambda mouse_pos: self.__hfov(mouse_pos),
+                  lambda mouse_pos: self.__vfov(mouse_pos), 
+                  lambda mouse_pos: self.__options(mouse_pos)]   
+
+        rect = pygame.Rect(144, 95, 31, 8)
+
+        # Draw the title        
+        self.__font.render(self.__unscaled, "FOV", pygame.Vector2(148, 85), pygame.Color("#A663CC"))
+
+        self.__text_handler(mouse_pos, texts, states, rect)
+
     def __hfov(self, mouse_pos):
         texts = ["SLIDER", "BACK"]
 
         states = [lambda mouse_pos: None, 
-                  lambda mouse_pos: self.__options(mouse_pos)]    
+                  lambda mouse_pos: self.__fov(mouse_pos)]    
             
         rect = pygame.Rect(112, 95, 95, 8)
         
@@ -208,7 +222,7 @@ class Options():
         texts = ["SLIDER", "BACK"]
 
         states = [lambda mouse_pos: None, 
-                  lambda mouse_pos: self.__options(mouse_pos)]            
+                  lambda mouse_pos: self.__fov(mouse_pos)]            
         
         rect = pygame.Rect(112, 95, 95, 8)
         
@@ -229,6 +243,75 @@ class Options():
         self.__font.render(self.__unscaled, "PLAYER SPEED", pygame.Vector2(112, 85), pygame.Color("#A663CC"))
 
         self.__text_handler(mouse_pos, texts, states, rect, "playerSpeedMultiplier", True)
+
+    def __view_mode(self, mouse_pos):
+        texts = ["LINEAR", "FISH EYE", "CORRECTED", "BACK"]
+
+        states = [lambda mouse_pos: self.__linear(mouse_pos), 
+                  lambda mouse_pos: self.__fish_eye(mouse_pos), 
+                  lambda mouse_pos: self.__corrected(mouse_pos), 
+                  lambda mouse_pos: self.__options(mouse_pos)]   
+            
+        rect = pygame.Rect(124, 95, 71, 8)
+
+        # Draw the title        
+        self.__font.render(self.__unscaled, "VIEW MODE", pygame.Vector2(124, 85), pygame.Color("#A663CC"))
+
+        self.__text_handler(mouse_pos, texts, states, rect, "menuSpin")
+
+    def __linear(self, mouse_pos):
+        if not(SETTINGS["linearViewMode"]):
+            texts = ["BOOL", "BACK"]
+        else:
+            texts = ["TRUE", "BACK"]
+            SETTINGS["fishEyeViewMode"] = False
+            SETTINGS["correctedViewMode"] = False
+
+        states = [lambda mouse_pos: self.__linear(mouse_pos), 
+                  lambda mouse_pos: self.__view_mode(mouse_pos)]   
+        
+        rect = pygame.Rect(140, 95, 39, 8)
+
+        # Draw the title        
+        self.__font.render(self.__unscaled, "LINEAR", pygame.Vector2(136, 85), pygame.Color("#A663CC"))
+
+        self.__text_handler(mouse_pos, texts, states, rect, "linearViewMode")
+
+    def __fish_eye(self, mouse_pos):
+        if not(SETTINGS["fishEyeViewMode"]):
+            texts = ["BOOL", "BACK"]
+        else:
+            texts = ["TRUE", "BACK"]
+            SETTINGS["linearViewMode"] = False
+            SETTINGS["correctedViewMode"] = False
+
+        states = [lambda mouse_pos: self.__fish_eye(mouse_pos), 
+                  lambda mouse_pos: self.__view_mode(mouse_pos)]   
+        
+        rect = pygame.Rect(140, 95, 39, 8)
+
+        # Draw the title        
+        self.__font.render(self.__unscaled, "FISH EYE", pygame.Vector2(128, 85), pygame.Color("#A663CC"))
+
+        self.__text_handler(mouse_pos, texts, states, rect, "fishEyeViewMode")
+
+    def __corrected(self, mouse_pos):
+        if not(SETTINGS["correctedViewMode"]):
+            texts = ["BOOL", "BACK"]
+        else:
+            texts = ["TRUE", "BACK"]
+            SETTINGS["linearViewMode"] = False
+            SETTINGS["fishEyeViewMode"] = False
+
+        states = [lambda mouse_pos: self.__corrected(mouse_pos), 
+                  lambda mouse_pos: self.__view_mode(mouse_pos)]
+        
+        rect = pygame.Rect(140, 95, 39, 8)
+
+        # Draw the title        
+        self.__font.render(self.__unscaled, "CORRECTED", pygame.Vector2(124, 85), pygame.Color("#A663CC"))
+
+        self.__text_handler(mouse_pos, texts, states, rect, "correctedViewMode")
 
     def __letterbox(self, mouse_pos):
         texts = ["BOOL", "BACK"]

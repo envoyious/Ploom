@@ -22,5 +22,8 @@
     "keyboardSensitivityMultiplier": 3200,
     "basePlayerSpeed": 4,
     "playerSpeedMultiplier": 1,
+    "linearViewMode": false,
+    "fishEyeViewMode": false,
+    "correctedViewMode": true,
     "menuSpin": false
 }

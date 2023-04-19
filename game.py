@@ -180,6 +180,13 @@ class Game(Scene):
         view_width = SETTINGS["viewWidth"]
         view_height = SETTINGS["viewHeight"]
 
+        if SETTINGS["linearViewMode"]:
+            view_mode = 0
+        elif SETTINGS["fishEyeViewMode"]:
+            view_mode = 1
+        elif SETTINGS["correctedViewMode"]:
+            view_mode = 2
+
         hfov = SETTINGS["hfov"]
         vfov = SETTINGS["vfov"]
         znear = SETTINGS["znear"]
@@ -268,8 +275,8 @@ class Game(Scene):
                     continue
 
                 # Calculate the x positions of the wall on screen
-                screen_start_x = screen_angle_to_x(wall_start_angle, hfov, view_width)
-                screen_end_x = screen_angle_to_x(wall_end_angle, hfov, view_width)
+                screen_start_x = screen_angle_to_x(wall_start_angle, hfov, view_width, view_mode)
+                screen_end_x = screen_angle_to_x(wall_end_angle, hfov, view_width, view_mode)
 
                 # Only draw points within the portal
                 if screen_start_x > portal.end_x:

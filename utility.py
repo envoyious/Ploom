@@ -47,21 +47,20 @@ def intersect(line_one_start, line_one_end, line_two_start, line_two_end):
 # This changes how each angle withing the FOV is seen. The fish eye view calculation is correct to life 
 # as it takes into consideration the curvature of the eyeball so the angle directly infront of the camera 
 # is shorter than the edges of the wall to the left and right. Linear view calculates the progression 
-# from the first point to the second linearly and does not consider the distance from the camera. Flatten
+# from the first point to the second linearly and does not consider the distance from the camera. Corrected
 # view dicreases distortion by using the perpendicular distance of the point from the camera so that flat 
 # walls do not change in size when moving and rotating
 
-# Fish eye view
-#def screen_angle_to_x(angle):
-#    return int(-(VIEW_WIDTH / 2) / math.sin(HFOV / 2) * math.sin(angle) + VIEW_WIDTH / 2)
-
-# Linear view
-#def screen_angle_to_x(angle):
-#    return int((VIEW_WIDTH / 2) - angle / (HFOV / 2) * VIEW_WIDTH / 2)
-
-# Flatten view
-def screen_angle_to_x(angle, hfov, view_width):
-    return int((-math.tan(math.pi * angle / (2 * hfov)) + 1) * view_width / 2)
+def screen_angle_to_x(angle, hfov, view_width, view_mode):
+    if view_mode == 0:
+        # Linear view
+        return int((view_width / 2) - angle / (hfov / 2) * view_width / 2)
+    elif view_mode == 1:
+        # Fish eye view
+        return int(-(view_width / 2) / math.sin(hfov / 2) * math.sin(angle) + view_width / 2)
+    else:
+        # Corrected view
+        return int((-math.tan(math.pi * angle / (2 * hfov)) + 1) * view_width / 2)
 
 
 # Convert ceiling and floor heights into a y coordinate
