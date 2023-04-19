@@ -14,12 +14,9 @@ from utility import *
 TEXT = pygame.Rect(0, 9, 312, 9)
 
 class Frustum:
-    def __init__(self, angle):
+    def __init__(self, angle, znear, zfar):
         left = rotate(pygame.Vector2(0, 1), math.pi / 2 - (angle / 2))
         right = rotate(pygame.Vector2(0, 1), math.pi / 2 - (-angle / 2))
-
-        znear = SETTINGS["znear"]
-        zfar = SETTINGS["zfar"]
 
         self.near_left = pygame.Vector2(left.x * znear, left.y * znear)
         self.far_left = pygame.Vector2(left.x * zfar, left.y * zfar)
@@ -71,9 +68,9 @@ class Player:
 
             # Left and right rotation
             if (keys_down[pygame.K_LEFT]):
-                self.angle -= sensitivity * sensitivity_multiplier
+                self.angle -= sensitivity * sensitivity_multiplier * delta_time
             if (keys_down[pygame.K_RIGHT]):
-                self.angle += sensitivity * sensitivity_multiplier
+                self.angle += sensitivity * sensitivity_multiplier * delta_time
 
             # Backwards and forwards movement
             if (keys_down[pygame.K_UP] or keys_down[pygame.K_w]):
@@ -127,41 +124,46 @@ class Player:
         else:
             self.sector = found
 
-def load_map(path):
-    sectors = []
-    walls = []
-
-    with open(path) as file:
-        data = json.load(file)
-
-    for i, n in enumerate(data["sectors"]):
-        sector = Sector(i, n["startWall"], n["numWalls"], n["floor"], n["ceiling"])
-        sectors.append(sector)
-    
-    for i, n in enumerate(data["walls"]):
-        wall = Wall(pygame.Vector2(n["x"], n["y"]), n["nextSector"])
-        walls.append(wall)
-
-    num_sectors = len(data["sectors"])
-
-    return sectors, walls, num_sectors
-
 class Game(Scene):
     def __init__(self, application, path):
         super().__init__(application)
         self.target = pygame.Surface((SETTINGS["viewWidth"], SETTINGS["viewHeight"]))
 
         # Create objects
-        self.sectors, self.walls, self.num_sectors = load_map(path)
+        self.sectors, self.walls, self.num_sectors = self.__load_map(path)
         self.player = Player(pygame.Vector3(8, 4, 0), 0)
-        self.font = None
-        self.options = None
+        self.__font = None
+        self.__options = None
+
+        # Create transparent darken layer for menu
+        menu_colour = pygame.Color(SETTINGS["menuColour"])
+        self.__darken = pygame.Surface((SETTINGS["viewWidth"], SETTINGS["viewHeight"]), pygame.SRCALPHA)
+        self.__darken.fill((menu_colour.r, menu_colour.g, menu_colour.b, 160))
+
+    def __load_map(self, path):
+        sectors = []
+        walls = []
+
+        with open(path) as file:
+            data = json.load(file)
+
+        for i, n in enumerate(data["sectors"]):
+            sector = Sector(i, n["startWall"], n["numWalls"], n["floor"], n["ceiling"])
+            sectors.append(sector)
+        
+        for i, n in enumerate(data["walls"]):
+            wall = Wall(pygame.Vector2(n["x"], n["y"]), n["nextSector"])
+            walls.append(wall)
+
+        num_sectors = len(data["sectors"])
+
+        return sectors, walls, num_sectors
 
     def load_content(self):
         pygame.event.set_grab(True)
         self.textures = pygame.image.load("content/textures.png").convert_alpha()
-        self.font = Font(self.textures.subsurface(TEXT))
-        self.options = Options(self.font, self.textures, self.target, self.application)
+        self.__font = Font(self.textures.subsurface(TEXT))
+        self.__options = Options(self.__font, self.textures, self.application)
         # super().load_content()
 
     def update(self, delta_time):
@@ -175,11 +177,13 @@ class Game(Scene):
     def render(self):
         self.target.fill(SETTINGS["clearColour"])
         
-        viewWidth = SETTINGS["viewWidth"]
-        viewHeight = SETTINGS["viewHeight"]
+        view_width = SETTINGS["viewWidth"]
+        view_height = SETTINGS["viewHeight"]
 
         hfov = SETTINGS["hfov"]
         vfov = SETTINGS["vfov"]
+        znear = SETTINGS["znear"]
+        zfar = SETTINGS["zfar"]
         
         #region Render walls
 
@@ -187,14 +191,14 @@ class Game(Scene):
         rendered_sectors = [False for i in range(self.num_sectors)]
 
         # Keep track of where on the screen a portal is for each x value
-        y_bottom = [0 for i in range(viewWidth)]
-        y_top = [viewWidth - 1 for i in range(viewWidth)]
+        y_bottom = [0 for i in range(view_width)]
+        y_top = [view_width - 1 for i in range(view_width)]
         
         # Create the view frustum
-        frustum = Frustum(hfov)
+        frustum = Frustum(hfov, znear, zfar)
 
         # Start rendering at the sector which contains the player
-        stack = Stack([Portal(self.player.sector, 0, viewWidth - 1)])
+        stack = Stack([Portal(self.player.sector, 0, view_width - 1)])
 
         while len(stack) != 0:
             # The original portal contains the whole screen, every subsequent portal is a smaller portion of the screen
@@ -237,8 +241,8 @@ class Game(Scene):
                 wall_end_angle = normalise_angle(math.atan2(transformed_end_wall.y, transformed_end_wall.x) - math.pi / 2)
 
                 # If the wall is partially in front of the player, clip it against the view frustum
-                if transformed_start_wall.y < SETTINGS["znear"] \
-                    or transformed_end_wall.y < SETTINGS["znear"] \
+                if transformed_start_wall.y < znear \
+                    or transformed_end_wall.y < znear \
                     or wall_start_angle > (hfov / 2) \
                     or wall_end_angle < (-hfov / 2): \
                     
@@ -264,8 +268,8 @@ class Game(Scene):
                     continue
 
                 # Calculate the x positions of the wall on screen
-                screen_start_x = screen_angle_to_x(wall_start_angle)
-                screen_end_x = screen_angle_to_x(wall_end_angle)
+                screen_start_x = screen_angle_to_x(wall_start_angle, hfov, view_width)
+                screen_end_x = screen_angle_to_x(wall_end_angle, hfov, view_width)
 
                 # Only draw points within the portal
                 if screen_start_x > portal.end_x:
@@ -289,22 +293,22 @@ class Game(Scene):
                 # Calculate the y positions of the wall on screen by projecting the points in 3D
                 # Avoid division by zero error
                 if transformed_start_wall.y != 0:
-                    scaled_start_y = vfov * viewHeight / transformed_start_wall.y
+                    scaled_start_y = vfov * view_height / transformed_start_wall.y
                 else:
-                    scaled_start_y = vfov * viewHeight / 0.000001
+                    scaled_start_y = vfov * view_height / 0.000001
 
                 if transformed_end_wall.y != 0:
-                    scaled_end_y = vfov * viewHeight / transformed_end_wall.y
+                    scaled_end_y = vfov * view_height / transformed_end_wall.y
                 else:
-                    scaled_end_y = vfov * viewHeight / 0.000001
+                    scaled_end_y = vfov * view_height / 0.000001
                 
                 # Calculate the y values for the floor and ceiling of the player's sector
-                floor_screen_y = screen_height_to_y(scaled_start_y, sector.floor, self.player), screen_height_to_y(scaled_end_y, sector.floor, self.player)  
-                ceiling_screen_y = screen_height_to_y(scaled_start_y, sector.ceiling, self.player), screen_height_to_y(scaled_end_y, sector.ceiling, self.player)
+                floor_screen_y = screen_height_to_y(scaled_start_y, sector.floor, self.player, view_height), screen_height_to_y(scaled_end_y, sector.floor, self.player, view_height)  
+                ceiling_screen_y = screen_height_to_y(scaled_start_y, sector.ceiling, self.player, view_height), screen_height_to_y(scaled_end_y, sector.ceiling, self.player, view_height)
 
                 # Calculate the y values for the floor and ceiling of the next sector
-                portal_floor_screen_y = screen_height_to_y(scaled_start_y, next_sector_floor, self.player), screen_height_to_y(scaled_end_y, next_sector_floor, self.player)
-                portal_ceiling_screen_y = screen_height_to_y(scaled_start_y, next_sector_ceiling, self.player), screen_height_to_y(scaled_end_y, next_sector_ceiling, self.player)
+                portal_floor_screen_y = screen_height_to_y(scaled_start_y, next_sector_floor, self.player, view_height), screen_height_to_y(scaled_end_y, next_sector_floor, self.player, view_height)
+                portal_ceiling_screen_y = screen_height_to_y(scaled_start_y, next_sector_ceiling, self.player, view_height), screen_height_to_y(scaled_end_y, next_sector_ceiling, self.player, view_height)
 
                 # Loop over the x cordinates and draw a line
                 for x in range(clamp(screen_start_x, portal.start_x, portal.end_x), clamp(screen_end_x, portal.start_x, portal.end_x) + 1):
@@ -328,14 +332,14 @@ class Game(Scene):
                     # Draw the ceiling
                     if ceiling_y < y_top[x]:
                         pygame.draw.line(self.target, pygame.Color("#B8D0EB"), 
-                                         (viewWidth - 1 - x, viewHeight - 1 - ceiling_y), 
-                                         (viewWidth - 1 - x, viewHeight - 1 - y_top[x]) )
+                                         (view_width - 1 - x, view_height - 1 - ceiling_y), 
+                                         (view_width - 1 - x, view_height - 1 - y_top[x]) )
 
                     # Draw the floor
                     if floor_y > y_bottom[x]:
                         pygame.draw.line(self.target, pygame.Color("#A663CC"), 
-                                         (viewWidth - 1 - x, viewHeight - 1 - y_bottom[x]), 
-                                         (viewWidth - 1 - x, viewHeight - 1 - floor_y))
+                                         (view_width - 1 - x, view_height - 1 - y_bottom[x]), 
+                                         (view_width - 1 - x, view_height - 1 - floor_y))
 
                     # If this wall is a portal, draw the top and bottom wall
                     if wall_start.next_sector != -1:
@@ -345,24 +349,42 @@ class Game(Scene):
 
                         # If this sector's ceiling is higher than the next sector's ceiling, draw the upper wall
                         if sector_ceiling > next_sector_ceiling:
-                            pygame.draw.line(self.target, pygame.Color("#D3F3EE"), 
-                                             (viewWidth - 1 - x, viewHeight - 1 - portal_ceiling_y), 
-                                             (viewWidth - 1 - x, viewHeight - 1 - ceiling_y) )
+                            average = (transformed_start_wall + transformed_end_wall) / 2
+                            distance = average.distance_to((0, 0)) / 2.5
+                            colour = pygame.Color("#D3F3EE")
+                            colour = (clamp(colour.r / distance, 0, colour.r), 
+                                      clamp(colour.g / distance, 0, colour.g),
+                                      clamp(colour.b / distance, 0, colour.b))
+                            pygame.draw.line(self.target, colour, 
+                                             (view_width - 1 - x, view_height - 1 - portal_ceiling_y), 
+                                             (view_width - 1 - x, view_height - 1 - ceiling_y) )
 
                         # If this sector's floor is lower than the next sector's floor, draw the lower wall
                         if sector_floor < next_sector_floor:
-                            pygame.draw.line(self.target, pygame.Color("#B298DC"), 
-                                             (viewWidth - 1 - x, viewHeight - 1 - floor_y), 
-                                             (viewWidth - 1 - x, viewHeight - 1 - portal_floor_y))
+                            average = (transformed_start_wall + transformed_end_wall) / 2
+                            distance = average.distance_to((0, 0)) / 2.5
+                            colour = pygame.Color("#B298DC")
+                            colour = (clamp(colour.r / distance, 0, colour.r), 
+                                      clamp(colour.g / distance, 0, colour.g),
+                                      clamp(colour.b / distance, 0, colour.b))
+                            pygame.draw.line(self.target, colour, 
+                                             (view_width - 1 - x, view_height - 1 - floor_y), 
+                                             (view_width - 1 - x, view_height - 1 - portal_floor_y))
 
                         # We need to set the portal dimensions so that in the next loop only walls within that new area are considered
-                        y_top[x] = clamp(min(min(ceiling_y, portal_ceiling_y), y_top[x]), 0, viewHeight - 1)
-                        y_bottom[x] = clamp(max(max(floor_y, portal_floor_y), y_bottom[x]), 0, viewHeight - 1)
+                        y_top[x] = clamp(min(min(ceiling_y, portal_ceiling_y), y_top[x]), 0, view_height - 1)
+                        y_bottom[x] = clamp(max(max(floor_y, portal_floor_y), y_bottom[x]), 0, view_height - 1)
                     else:
                         # Draw the wall
-                        pygame.draw.line(self.target, pygame.Color("#6F2DBD"), 
-                                         (viewWidth - 1 - x, viewHeight - 1 - floor_y), 
-                                         (viewWidth - 1 - x, viewHeight - 1 - ceiling_y))
+                        average = (transformed_start_wall + transformed_end_wall) / 2
+                        distance = average.distance_to((0, 0)) / 2.5
+                        colour = pygame.Color("#6F2DBD")
+                        colour = (clamp(colour.r / distance, 0, colour.r), 
+                                  clamp(colour.g / distance, 0, colour.g),
+                                  clamp(colour.b / distance, 0, colour.b))
+                        pygame.draw.line(self.target, colour, 
+                                         (view_width - 1 - x, view_height - 1 - floor_y), 
+                                         (view_width - 1 - x, view_height - 1 - ceiling_y))
 
                 # Push the next sector to be rendered onto the stack
                 if wall_start.next_sector != -1:
@@ -392,10 +414,7 @@ class Game(Scene):
 
         # Menu
         if (not(pygame.event.get_grab())):
-            menuColour = pygame.Color(SETTINGS["menuColour"])
-            darken = pygame.Surface((viewWidth, viewHeight), pygame.SRCALPHA)
-            darken.fill((menuColour.r, menuColour.g, menuColour.b, 160))
-            self.target.blit(darken, (0, 0))
-            self.options.render()
+            self.target.blit(self.__darken, (0, 0))
+            self.__options.render(self.target)
 
         super().render()

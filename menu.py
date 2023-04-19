@@ -33,7 +33,7 @@ class Menu(Scene):
         self.__textures = pygame.image.load("content/textures.png").convert_alpha()
         self.__background: pygame.Surface = pygame.image.load("content/background.png").convert_alpha()
         self.__font = Font(self.__textures.subsurface(TEXT))
-        self.__options = Options(self.__font, self.__textures, self.target, self.application)
+        self.__options = Options(self.__font, self.__textures, self.application)
 
     def update(self, delta_time):
         if SETTINGS["menuSpin"]:
@@ -55,8 +55,12 @@ class Menu(Scene):
     def render(self):
         self.target.fill(SETTINGS["menuColour"])
 
-        self.target.blit(self.__current_image, (0, -40))
+        unscaled = pygame.Surface((320, 180), flags=pygame.SRCALPHA)
+        unscaled.blit(self.__current_image, (0, -40))
 
-        self.__options.render()
+        scaled = pygame.transform.scale(unscaled, (self.target.get_width(), self.target.get_height()))
+        self.target.blit(scaled, (0, 0))
+
+        self.__options.render(self.target)
         
         super().render()

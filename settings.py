@@ -1,7 +1,7 @@
 # PLOOM, 0.3 WIP
 # Developed by Zain Akram
 
-import math
+import sys, math
 import pygame
 import json
 
@@ -10,9 +10,14 @@ class Settings:
         self.__data = None
 
         with open(path) as file:
-            self.__data = json.load(file)
+            self.__data: dict = json.load(file)
+
+        # https://stackoverflow.com/questions/1136826/what-does-sys-intern-do-and-when-should-it-be-used
+        for key in self.__data.keys():
+            sys.intern(key)
         
-        self["clearColour"] = pygame.Color(self["clearColour"])
+        colour = pygame.Color(self["clearColour"])
+        self["clearColour"] = (colour.r, colour.g, colour.b)
         self["hfov"] = math.radians(self["hfov"])
         self["vfov"] = math.radians(self["vfov"])
 

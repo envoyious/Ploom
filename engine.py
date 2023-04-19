@@ -20,6 +20,7 @@ class Engine:
         self._graphics = None
         self._flags = 0
         self._framerate = 60
+        self._fixed_time_step = True
 
         # Public properties
         self.is_running = True
@@ -75,7 +76,10 @@ class Engine:
             self.render()
 
             # Cap the framerate
-            clock.tick(self._framerate)
+            if self._fixed_time_step:
+                clock.tick(self._framerate)
+            else:
+                clock.tick()
             pygame.display.set_caption(str(self._caption + ", FPS: {}").format(clock.get_fps()))
     
 

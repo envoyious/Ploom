@@ -14,12 +14,12 @@ class Font:
         char_count = 0 
         for x in range(texture.get_width() + 8):
             if x != 0 and x % self.__char_width == 0:
-                char = self.clip(texture, x - self.__char_width, 0, self.__char_width, texture.get_height()) 
+                char = self.__clip(texture, x - self.__char_width, 0, self.__char_width, texture.get_height()) 
                 self.__characters[self.__char_order[char_count]] = char
                 if char_count < len(self.__char_order) + 1:
                     char_count += 1
     
-    def clip(self, surface, x, y, width, height):
+    def __clip(self, surface, x, y, width, height):
         sprite = surface.subsurface(pygame.Rect(x, y, width, height))
         return sprite
 

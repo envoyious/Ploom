@@ -21,6 +21,7 @@ class App(Engine):
         self._mouse_visible = False
         self._mouse_grab = True
         self._framerate = SETTINGS["framerate"]
+        self._fixed_time_step = SETTINGS["fixedTimeStep"]
 
         #self.scene = Game(self.instance, "content/map.json")
         self.scene = Menu(self.instance)
@@ -40,8 +41,8 @@ class App(Engine):
     def render(self):
         self._graphics.fill(pygame.Color("black"))
 
-        viewWidth = SETTINGS["viewWidth"]
-        viewHeight = SETTINGS["viewHeight"]
+        view_width = SETTINGS["viewWidth"]
+        view_height = SETTINGS["viewHeight"]
 
         self.scene.render()
 
@@ -49,14 +50,14 @@ class App(Engine):
 
         target = self.scene.target
         window_width, window_height = self._graphics.get_size()
-        scale = min(window_width / viewWidth, window_height / viewHeight)
+        scale = min(window_width / view_width, window_height / view_height)
 
-        bar_width = int((window_width - int(viewWidth * scale)) / 2)
-        bar_height = int((window_height - int(viewHeight * scale)) / 2)
+        bar_width = int((window_width - int(view_width * scale)) / 2)
+        bar_height = int((window_height - int(view_height * scale)) / 2)
 
         if SETTINGS["letterbox"]:
             # Adds black bars to either side of the screen
-            resized = pygame.transform.scale(target, (int(viewWidth * scale), int(viewHeight * scale)))
+            resized = pygame.transform.scale(target, (int(view_width * scale), int(view_height * scale)))
             self._graphics.blit(resized, (bar_width, bar_height))
         else:
             # Stretches image to fill the whole screen

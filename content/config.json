@@ -7,6 +7,7 @@
     "menuColour": "#1B0F27",
     "letterbox": true,
     "framerate": 60,
+    "fixedTimeStep": false,
     "hfov": 103,
     "hfovUpperBound": 130,
     "hfovLowerBound": 40, 
@@ -18,7 +19,7 @@
     "playerHeight": 2.4,
     "baseSensitivity": 0.00046,
     "sensitivityMultiplier": 1,
-    "keyboardSensitivityMultiplier": 60,
+    "keyboardSensitivityMultiplier": 3200,
     "basePlayerSpeed": 4,
     "playerSpeedMultiplier": 1,
     "menuSpin": false

@@ -11,12 +11,12 @@ NONE = pygame.Rect(0, 0, 9, 9)
 HOVER = pygame.Rect(9, 0, 9, 9)
 
 class Options():
-    def __init__(self, font, textures, target, application):
-        self.__target = target
+    def __init__(self, font, textures, application):
+        self.__unscaled = pygame.Surface((320, 180), flags=pygame.SRCALPHA)
         self.__textures = textures
         self.__application = application
         self.__font = font
-        self.__state = lambda mouse_pos: self.menu(mouse_pos)
+        self.__state = lambda mouse_pos: self.__menu(mouse_pos)
 
         self.__current_mouse = pygame.mouse.get_pressed()
         self.__previous_mouse = self.__current_mouse
@@ -24,22 +24,24 @@ class Options():
         self.__cursor = False
         self.__track_slider = False
 
-    def render(self):
+    def render(self, target: pygame.Surface):
         self.__current_mouse = pygame.mouse.get_pressed()
         self.__cursor = False
+
+        self.__unscaled.fill(pygame.Color(0, 0, 0, 0))
 
         # Mouse left-click released
         if not(self.__current_mouse[0]) and self.__previous_mouse[0]:
             self.__track_slider = False
 
-        viewWidth = SETTINGS["viewWidth"]
-        viewHeight = SETTINGS["viewHeight"]
+        view_width = 320
+        view_height = 180
 
         window_width, window_height = pygame.display.get_surface().get_size()
-        scale = min(window_width / viewWidth, window_height / viewHeight)
+        scale = min(window_width / view_width, window_height / view_height)
 
-        bar_width = int((window_width - int(viewWidth * scale)) / 2)
-        bar_height = int((window_height - int(viewHeight * scale)) / 2)
+        bar_width = int((window_width - int(view_width * scale)) / 2)
+        bar_height = int((window_height - int(view_height * scale)) / 2)
 
         mouse_pos = (int((pygame.mouse.get_pos()[0] - bar_width) / scale), int((pygame.mouse.get_pos()[1] - bar_height) / scale))
 
@@ -52,17 +54,20 @@ class Options():
             sprite = self.__textures.subsurface(HOVER)
         else:
             sprite = self.__textures.subsurface(NONE)
-        self.__target.blit(sprite, (mouse_pos[0] - 4, mouse_pos[1] - 4))
+        self.__unscaled.blit(sprite, (mouse_pos[0] - 4, mouse_pos[1] - 4))
 
         #endregion
+
+        scaled = pygame.transform.scale(self.__unscaled, (target.get_width(), target.get_height()))
+        target.blit(scaled, (0, 0))
         
         self.__previous_mouse = self.__current_mouse
 
-    def text_handler(self, mouse_pos, texts, states, rect, property = "", percentage = True):
+    def __text_handler(self, mouse_pos, texts, states, rect, property = "", percentage = True):
         colour = pygame.Color("#A663CC")
 
         # Draw outline
-        pygame.draw.rect(self.__target, pygame.Color("#A663CC"), pygame.Rect(rect.x - 2, rect.y - 1, rect.width + 4, rect.height * len(texts) + 3), 1)
+        pygame.draw.rect(self.__unscaled, pygame.Color("#A663CC"), pygame.Rect(rect.x - 2, rect.y - 1, rect.width + 4, rect.height * len(texts) + 3), 1)
 
         # Draw each text
         for i, text in enumerate(texts):
@@ -76,7 +81,7 @@ class Options():
                     # Mouse left-click pressed
                     if self.__current_mouse[0] and not(self.__previous_mouse[0]):
                         SETTINGS[property] = not(SETTINGS[property])
-                self.__font.render(self.__target, str(value).upper(), pygame.Vector2(rect.x, rect.y), colour)
+                self.__font.render(self.__unscaled, str(value).upper(), pygame.Vector2(rect.x, rect.y), colour)
 
             elif text == "SLIDER": 
                 value = SETTINGS[property]
@@ -113,14 +118,14 @@ class Options():
                     else:
                         SETTINGS[property] = math.radians(percent * upper_bound + lower_bound)
 
-                pygame.draw.rect(self.__target, pygame.Color("#A663CC"), slider_bar)
-                pygame.draw.rect(self.__target, colour, slider_rect)
+                pygame.draw.rect(self.__unscaled, pygame.Color("#A663CC"), slider_bar)
+                pygame.draw.rect(self.__unscaled, colour, slider_rect)
 
                 if percentage:
                     number = str(round(percent * 100)) + "%"
                 else:
                     number = str(round(percent * upper_bound + lower_bound)) + "°"
-                self.__font.render(self.__target, number, pygame.Vector2(rect.x, rect.y), colour)
+                self.__font.render(self.__unscaled, number, pygame.Vector2(rect.x, rect.y), colour)
             
             else:                
                 if rect.collidepoint(mouse_pos):
@@ -131,167 +136,122 @@ class Options():
                         self.__state = states[i]
                 else:
                     colour = pygame.Color("#A663CC")
-                self.__font.render(self.__target, text, pygame.Vector2(rect.x, rect.y), colour)
+                self.__font.render(self.__unscaled, text, pygame.Vector2(rect.x, rect.y), colour)
             rect.y += 8
 
-    def menu(self, mouse_pos):
+    def __menu(self, mouse_pos):
         texts = ["START", "OPTIONS", "ABOUT", "EXIT"]
 
-        states = [lambda mouse_pos: self.start(mouse_pos), 
-                  lambda mouse_pos: self.options(mouse_pos), 
-                  lambda mouse_pos: self.about(mouse_pos),
-                  lambda mouse_pos: self.exit(mouse_pos)]
+        states = [lambda mouse_pos: self.__start(mouse_pos), 
+                  lambda mouse_pos: self.__options(mouse_pos), 
+                  lambda mouse_pos: self.__about(mouse_pos),
+                  lambda mouse_pos: self.__exit(mouse_pos)]
         
         rect = pygame.Rect(132, 96, 55, 8)
 
-        self.text_handler(mouse_pos, texts, states, rect)
-
-        pygame.draw.line(self.__target, pygame.Color("red"), (0, 100), (128, 100))
-        pygame.draw.line(self.__target, pygame.Color("red"), (319, 100), (319 - 128, 100))
+        self.__text_handler(mouse_pos, texts, states, rect)
         
-    def start(self, mouse_pos):
+    def __start(self, mouse_pos):
         self.__application.load_level("content/map.json")
     
-    def options(self, mouse_pos):
+    def __options(self, mouse_pos):
         texts = ["SENSITIVITY", "HFOV", "VFOV", "PLAYER SPEED", "LETTERBOX", "MENU SPIN", "BACK"]
         
-        states = [lambda mouse_pos: self.sensitivity(mouse_pos), 
-                  lambda mouse_pos: self.hfov(mouse_pos), 
-                  lambda mouse_pos: self.vfov(mouse_pos),
-                  lambda mouse_pos: self.player_speed(mouse_pos),
-                  lambda mouse_pos: self.letterbox(mouse_pos),
-                  lambda mouse_pos: self.menu_spin(mouse_pos),
-                  lambda mouse_pos: self.menu(mouse_pos)]
+        states = [lambda mouse_pos: self.__sensitivity(mouse_pos), 
+                  lambda mouse_pos: self.__hfov(mouse_pos), 
+                  lambda mouse_pos: self.__vfov(mouse_pos),
+                  lambda mouse_pos: self.__player_speed(mouse_pos),
+                  lambda mouse_pos: self.__letterbox(mouse_pos),
+                  lambda mouse_pos: self.__menu_spin(mouse_pos),
+                  lambda mouse_pos: self.__menu(mouse_pos)]
 
         rect = pygame.Rect(112, 95, 95, 8)
 
         # Draw the title        
-        self.__font.render(self.__target, "OPTIONS", pygame.Vector2(132, 85), pygame.Color("#A663CC"))
+        self.__font.render(self.__unscaled, "OPTIONS", pygame.Vector2(132, 85), pygame.Color("#A663CC"))
 
-        self.text_handler(mouse_pos, texts, states, rect)
-
-        pygame.draw.line(self.__target, pygame.Color("red"), (0, 90), (130, 90))
-        pygame.draw.line(self.__target, pygame.Color("red"), (319, 90), (319 - 130, 90))
-
-        pygame.draw.line(self.__target, pygame.Color("red"), (0, 100), (108, 100))
-        pygame.draw.line(self.__target, pygame.Color("red"), (319, 100), (319 - 108, 100))
+        self.__text_handler(mouse_pos, texts, states, rect)
         
-    def about(self, mouse_pos):
+    def __about(self, mouse_pos):
         pass
 
-    def exit(self, mouse_pos):
+    def __exit(self, mouse_pos):
         self.__application.is_running = False
 
-    def sensitivity(self, mouse_pos):
+    def __sensitivity(self, mouse_pos):
         texts = ["SLIDER", "BACK"]
         
         states = [lambda mouse_pos: None, 
-                  lambda mouse_pos: self.options(mouse_pos)]    
+                  lambda mouse_pos: self.__options(mouse_pos)]    
             
         rect = pygame.Rect(112, 95, 95, 8)
         
         # Draw the title        
-        self.__font.render(self.__target, "SENSITIVTY", pygame.Vector2(120, 85), pygame.Color("#A663CC"))
+        self.__font.render(self.__unscaled, "SENSITIVTY", pygame.Vector2(120, 85), pygame.Color("#A663CC"))
         
-        self.text_handler(mouse_pos, texts, states, rect, "sensitivityMultiplier", True)
-
-        pygame.draw.line(self.__target, pygame.Color("red"), (0, 90), (118, 90))
-        pygame.draw.line(self.__target, pygame.Color("red"), (319, 90), (319 - 118, 90))
-
-        pygame.draw.line(self.__target, pygame.Color("red"), (0, 100), (108, 100))
-        pygame.draw.line(self.__target, pygame.Color("red"), (319, 100), (319 - 108, 100))
+        self.__text_handler(mouse_pos, texts, states, rect, "sensitivityMultiplier", True)
         
-    def hfov(self, mouse_pos):
+    def __hfov(self, mouse_pos):
         texts = ["SLIDER", "BACK"]
 
         states = [lambda mouse_pos: None, 
-                  lambda mouse_pos: self.options(mouse_pos)]    
+                  lambda mouse_pos: self.__options(mouse_pos)]    
             
         rect = pygame.Rect(112, 95, 95, 8)
         
         # Draw the title        
-        self.__font.render(self.__target, "HFOV", pygame.Vector2(144, 85), pygame.Color("#A663CC"))
+        self.__font.render(self.__unscaled, "HFOV", pygame.Vector2(144, 85), pygame.Color("#A663CC"))
 
-        self.text_handler(mouse_pos, texts, states, rect, "hfov", False)
+        self.__text_handler(mouse_pos, texts, states, rect, "hfov", False)
 
-        pygame.draw.line(self.__target, pygame.Color("red"), (0, 90), (142, 90))
-        pygame.draw.line(self.__target, pygame.Color("red"), (319, 90), (319 - 142, 90))
-
-        pygame.draw.line(self.__target, pygame.Color("red"), (0, 100), (108, 100))
-        pygame.draw.line(self.__target, pygame.Color("red"), (319, 100), (319 - 108, 100))
-
-    def vfov(self, mouse_pos):
+    def __vfov(self, mouse_pos):
         texts = ["SLIDER", "BACK"]
 
         states = [lambda mouse_pos: None, 
-                  lambda mouse_pos: self.options(mouse_pos)]            
+                  lambda mouse_pos: self.__options(mouse_pos)]            
         
         rect = pygame.Rect(112, 95, 95, 8)
         
         # Draw the title
-        self.__font.render(self.__target, "VFOV", pygame.Vector2(144, 85), pygame.Color("#A663CC"))
+        self.__font.render(self.__unscaled, "VFOV", pygame.Vector2(144, 85), pygame.Color("#A663CC"))
         
-        self.text_handler(mouse_pos, texts, states, rect, "vfov", False)
-
-        pygame.draw.line(self.__target, pygame.Color("red"), (0, 90), (142, 90))
-        pygame.draw.line(self.__target, pygame.Color("red"), (319, 90), (319 - 142, 90))
-
-        pygame.draw.line(self.__target, pygame.Color("red"), (0, 100), (108, 100))
-        pygame.draw.line(self.__target, pygame.Color("red"), (319, 100), (319 - 108, 100))
+        self.__text_handler(mouse_pos, texts, states, rect, "vfov", False)
         
-    def player_speed(self, mouse_pos):
+    def __player_speed(self, mouse_pos):
         texts = ["SLIDER", "BACK"]
 
         states = [lambda mouse_pos: None, 
-                  lambda mouse_pos: self.options(mouse_pos)]           
+                  lambda mouse_pos: self.__options(mouse_pos)]           
         
         rect = pygame.Rect(112, 95, 95, 8)
         
         # Draw the title        
-        self.__font.render(self.__target, "PLAYER SPEED", pygame.Vector2(112, 85), pygame.Color("#A663CC"))
+        self.__font.render(self.__unscaled, "PLAYER SPEED", pygame.Vector2(112, 85), pygame.Color("#A663CC"))
 
-        self.text_handler(mouse_pos, texts, states, rect, "playerSpeedMultiplier", True)
+        self.__text_handler(mouse_pos, texts, states, rect, "playerSpeedMultiplier", True)
 
-        pygame.draw.line(self.__target, pygame.Color("red"), (0, 90), (110, 90))
-        pygame.draw.line(self.__target, pygame.Color("red"), (319, 90), (319 - 110, 90))
-
-        pygame.draw.line(self.__target, pygame.Color("red"), (0, 100), (108, 100))
-        pygame.draw.line(self.__target, pygame.Color("red"), (319, 100), (319 - 108, 100))
-
-    def letterbox(self, mouse_pos):
+    def __letterbox(self, mouse_pos):
         texts = ["BOOL", "BACK"]
 
         states = [lambda mouse_pos: None, 
-                  lambda mouse_pos: self.options(mouse_pos)]   
+                  lambda mouse_pos: self.__options(mouse_pos)]   
         
         rect = pygame.Rect(140, 95, 39, 8)
 
         # Draw the title        
-        self.__font.render(self.__target, "LETTERBOX", pygame.Vector2(124, 85), pygame.Color("#A663CC"))
+        self.__font.render(self.__unscaled, "LETTERBOX", pygame.Vector2(124, 85), pygame.Color("#A663CC"))
 
-        self.text_handler(mouse_pos, texts, states, rect, "letterbox")
+        self.__text_handler(mouse_pos, texts, states, rect, "letterbox")
 
-        pygame.draw.line(self.__target, pygame.Color("red"), (0, 90), (122, 90))
-        pygame.draw.line(self.__target, pygame.Color("red"), (319, 90), (319 - 122, 90))
-
-        pygame.draw.line(self.__target, pygame.Color("red"), (0, 100), (136, 100))
-        pygame.draw.line(self.__target, pygame.Color("red"), (319, 100), (319 - 136, 100))
-
-    def menu_spin(self, mouse_pos):
+    def __menu_spin(self, mouse_pos):
         texts = ["BOOL", "BACK"]
 
         states = [lambda mouse_pos: None, 
-                  lambda mouse_pos: self.options(mouse_pos)]    
+                  lambda mouse_pos: self.__options(mouse_pos)]    
             
         rect = pygame.Rect(140, 95, 39, 8)
 
         # Draw the title        
-        self.__font.render(self.__target, "MENU SPIN", pygame.Vector2(124, 85), pygame.Color("#A663CC"))
+        self.__font.render(self.__unscaled, "MENU SPIN", pygame.Vector2(124, 85), pygame.Color("#A663CC"))
 
-        self.text_handler(mouse_pos, texts, states, rect, "menuSpin")
-        
-        pygame.draw.line(self.__target, pygame.Color("red"), (0, 90), (122, 90))
-        pygame.draw.line(self.__target, pygame.Color("red"), (319, 90), (319 - 122, 90))
-
-        pygame.draw.line(self.__target, pygame.Color("red"), (0, 100), (136, 100))
-        pygame.draw.line(self.__target, pygame.Color("red"), (319, 100), (319 - 136, 100))
+        self.__text_handler(mouse_pos, texts, states, rect, "menuSpin")

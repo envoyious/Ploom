@@ -4,8 +4,6 @@
 import math
 import pygame
 
-from settings import SETTINGS
-
 # Clamp the value to the inclusive range of min and max.
 def clamp(value, min_value, max_value):
         return min(max(value, min_value), max_value)
@@ -62,13 +60,13 @@ def intersect(line_one_start, line_one_end, line_two_start, line_two_end):
 #    return int((VIEW_WIDTH / 2) - angle / (HFOV / 2) * VIEW_WIDTH / 2)
 
 # Flatten view
-def screen_angle_to_x(angle):
-    return int((-math.tan(math.pi * angle / (2 * SETTINGS["hfov"])) + 1) * SETTINGS["viewWidth"] / 2)
+def screen_angle_to_x(angle, hfov, view_width):
+    return int((-math.tan(math.pi * angle / (2 * hfov)) + 1) * view_width / 2)
 
 
 # Convert ceiling and floor heights into a y coordinate
-def screen_height_to_y(scaled_y, height, player):
-    return int(SETTINGS["viewHeight"] / 2 + (height - player.position.z) * scaled_y)
+def screen_height_to_y(scaled_y, plane_height, player, view_height):
+    return int(view_height / 2 + (plane_height - player.position.z) * scaled_y)
 
 # -1 right, 1 left given a point and a line
 def point_side(point, line_start, line_end):
