@@ -89,13 +89,11 @@ class Options():
                 if percentage: 
                     denominator = 2
                     percent = value
-                    print(percent)
                 else:
                     denominator = 1
                     lower_bound = SETTINGS[property + "LowerBound"]
                     upper_bound = SETTINGS[property + "UpperBound"] - lower_bound
                     percent = (math.degrees(value) - lower_bound) / upper_bound
-                    print(math.degrees(value))
 
                 slider_bar = pygame.Rect(rect.x + 32, rect.y + 3, 63, 3)
                 slider_rect = pygame.Rect(rect.x + int(60 / denominator * percent) + 32, rect.y + 1, 3, 7)

@@ -399,9 +399,21 @@ class Game(Scene):
 
         #endregion
 
-        pygame.draw.line(self.target, pygame.Color("red"), (self.player.position.x * 10, self.player.position.y * 10), (int(math.cos(self.player.angle) * 5 + self.player.position.x * 10), int(math.sin(self.player.angle) * 5 + self.player.position.y * 10)))
-        self.target.set_at((int(self.player.position.x * 10), int(self.player.position.y * 10)), pygame.Color("green"))
+        # Draw the 2D minimap
+        scale_factor = 7
+        line_length = 36
+        offset = hfov / 2
 
+        pygame.draw.line(self.target, pygame.Color("red"), 
+                         (self.player.position.x * scale_factor, self.player.position.y * scale_factor), 
+                         (int(math.cos(-offset + self.player.angle) * line_length + self.player.position.x * scale_factor), int(math.sin(-offset + self.player.angle) * line_length + self.player.position.y * scale_factor)))
+        
+        pygame.draw.line(self.target, pygame.Color("red"), 
+                         (self.player.position.x * scale_factor, self.player.position.y * scale_factor), 
+                         (int(math.cos(offset + self.player.angle) * line_length + self.player.position.x * scale_factor), int(math.sin(offset + self.player.angle) * line_length + self.player.position.y * scale_factor)))
+
+        self.target.set_at((int(self.player.position.x * scale_factor), int(self.player.position.y * scale_factor)), pygame.Color("green"))
+        
         for sector in self.sectors:
             for i in range(sector.num_walls):
                 p1 = self.walls[sector.start_wall + i]
@@ -417,7 +429,9 @@ class Game(Scene):
                 else:
                     colour = pygame.Color("red")
                 
-                pygame.draw.line(self.target, colour, (p1.position.x*10, p1.position.y*10), (p2.position.x*10, p2.position.y*10))
+                pygame.draw.line(self.target, colour, 
+                                 (p1.position.x * scale_factor + 1, p1.position.y * scale_factor + 1), 
+                                 (p2.position.x * scale_factor + 1, p2.position.y * scale_factor + 1))
 
         # Menu
         if (not(pygame.event.get_grab())):
