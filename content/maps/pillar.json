@@ -1,0 +1,118 @@
+{
+    "player": {
+        "x": 4,
+        "y": 2
+    },
+    "sectors": [
+        {
+            "startWall": 0,
+            "numWalls": 4,
+            "floor": 0.0,
+            "ceiling": 10.0
+        },
+        {
+            "startWall": 4,
+            "numWalls": 4,
+            "floor": 1.0,
+            "ceiling": 10.0
+        },
+        {
+            "startWall": 8,
+            "numWalls": 4,
+            "floor": 2.0,
+            "ceiling": 10.0
+        },
+        {
+            "startWall": 12,
+            "numWalls": 4,
+            "floor": 1.0,
+            "ceiling": 10.0
+        }
+
+    ],
+    "walls": [
+        {
+            "x": 0,
+            "y": 0,
+            "nextSector": 1
+        },
+        {
+            "x": 3,
+            "y": 3,
+            "nextSector": -1
+        },
+        {
+            "x": 5,
+            "y": 3,
+            "nextSector": 3
+        },
+        {
+            "x": 8,
+            "y": 0,
+            "nextSector": -1
+        },
+
+        {
+            "x": 0,
+            "y": 0,
+            "nextSector": -1
+        },
+        {
+            "x": 0,
+            "y": 8,
+            "nextSector": 2
+        },
+        {
+            "x": 3,
+            "y": 5,
+            "nextSector": -1
+        },
+        {
+            "x": 3,
+            "y": 3,
+            "nextSector": 0
+        },
+
+        {
+            "x": 0,
+            "y": 8,
+            "nextSector": -1
+        },
+        {
+            "x": 8,
+            "y": 8,
+            "nextSector": 3
+        },
+        {
+            "x": 5,
+            "y": 5,
+            "nextSector": -1
+        },
+        {
+            "x": 3,
+            "y": 5,
+            "nextSector": 1
+        },
+
+        {
+            "x": 8,
+            "y": 8,
+            "nextSector": -1
+        },
+        {
+            "x": 8,
+            "y": 0,
+            "nextSector": 0
+        },
+        {
+            "x": 5,
+            "y": 3,
+            "nextSector": -1
+        },
+        {
+            "x": 5,
+            "y": 5,
+            "nextSector": 2
+        }
+    ]
+}

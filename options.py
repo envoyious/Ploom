@@ -3,6 +3,7 @@
 
 import math
 import pygame, pygame.draw
+import os
 
 from settings import SETTINGS
 from utility import clamp
@@ -23,6 +24,18 @@ class Options():
 
         self.__cursor = False
         self.__track_slider = False
+        
+        self.__maps = []
+
+        path = os.getcwd() + "/content/maps"
+
+        # Traverse the map directory
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                # Check the extension of files
+                if file.endswith('.json'):
+                    # Add map file to available maps
+                    self.__maps.append(file)
 
     def render(self, target: pygame.Surface):
         self.__current_mouse = pygame.mouse.get_pressed()
@@ -150,7 +163,43 @@ class Options():
         self.__text_handler(mouse_pos, texts, states, rect)
         
     def __start(self, mouse_pos):
-        self.__application.load_level("content/map.json")
+        texts = []
+        states = []
+        length = 0
+
+        for map in self.__maps:
+            texts.append(map[:-5].upper())
+            states.append(lambda mouse_pos: None)
+            if len(map[:-5]) > length:
+                length = len(map[:-5])
+
+        texts.append("BACK")
+        states.append(lambda mouse_pos: self.__menu(mouse_pos))
+        
+        # Draw the title        
+        self.__font.render(self.__unscaled, "START", pygame.Vector2(140, 85), pygame.Color("#A663CC"))
+
+        rect = pygame.Rect(160 - (length * 8) / 2, 95, length * 8 - 1, 8)
+
+        # Draw outline
+        pygame.draw.rect(self.__unscaled, pygame.Color("#A663CC"), pygame.Rect(rect.x - 2, rect.y - 1, rect.width + 4, rect.height * len(texts) + 3), 1)
+
+        for i, text in enumerate(texts):
+            if rect.collidepoint(mouse_pos):
+                colour = pygame.Color("#B298DC")
+                self.__cursor = True
+                # Mouse left-click pressed
+                if self.__current_mouse[0] and not(self.__previous_mouse[0]):
+                    if text == "BACK":
+                        self.__state = states[i]
+                    else:
+                        self.__application.load_level("content/maps/" + self.__maps[i])
+            else:
+                colour = pygame.Color("#A663CC")
+            self.__font.render(self.__unscaled, text, pygame.Vector2(rect.x, rect.y), colour)
+            rect.y += 8
+
+        #self.__application.load_level("content/map.json")
     
     def __options(self, mouse_pos):
         texts = ["SENSITIVITY", "FOV", "PLAYER SPEED", "VIEW MODE", "LETTERBOX", "MENU SPIN", "BACK"]

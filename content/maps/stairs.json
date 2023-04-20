@@ -1,0 +1,192 @@
+{
+    "player": {
+        "x": 2.5,
+        "y": 8
+    },
+    "sectors": [
+        {
+            "startWall": 0,
+            "numWalls": 4,
+            "floor": 4.0,
+            "ceiling": 14.0
+        },
+        {
+            "startWall": 4,
+            "numWalls": 4,
+            "floor": 3.0,
+            "ceiling": 14.0
+        },
+        {
+            "startWall": 8,
+            "numWalls": 4,
+            "floor": 2.0,
+            "ceiling": 14.0
+        },
+        {
+            "startWall": 12,
+            "numWalls": 4,
+            "floor": 1.0,
+            "ceiling": 14.0
+        },
+        {
+            "startWall": 16,
+            "numWalls": 4,
+            "floor": 0.0,
+            "ceiling": 8.0
+        },
+        {
+            "startWall": 20,
+            "numWalls": 4,
+            "floor": 0.0,
+            "ceiling": 8.0
+        },
+        {
+            "startWall": 24,
+            "numWalls": 4,
+            "floor": 0.0,
+            "ceiling": 8.0
+        }
+    ],
+    "walls": [
+        {
+            "x": 1,
+            "y": 0,
+            "nextSector": -1
+        },
+        {
+            "x": 1,
+            "y": 3,
+            "nextSector": 1
+        },
+        {
+            "x": 4,
+            "y": 3,
+            "nextSector": -1
+        },
+        {
+            "x": 4,
+            "y": 0,
+            "nextSector": -1
+        },
+        {
+            "x": 1,
+            "y": 3,
+            "nextSector": -1
+        },
+        {
+            "x": 1,
+            "y": 4,
+            "nextSector": 2
+        },
+        {
+            "x": 4,
+            "y": 4,
+            "nextSector": -1
+        },
+        {
+            "x": 4,
+            "y": 3,
+            "nextSector": 0
+        },
+        {
+            "x": 1,
+            "y": 4,
+            "nextSector": -1
+        },
+        {
+            "x": 1,
+            "y": 5,
+            "nextSector": 3
+        },
+        {
+            "x": 4,
+            "y": 5,
+            "nextSector": -1
+        },
+        {
+            "x": 4,
+            "y": 4,
+            "nextSector": 1
+        },
+        {
+            "x": 1,
+            "y": 5,
+            "nextSector": -1
+        },
+        {
+            "x": 1,
+            "y": 6,
+            "nextSector": 4
+        },
+        {
+            "x": 4,
+            "y": 6,
+            "nextSector": -1
+        },
+        {
+            "x": 4,
+            "y": 5,
+            "nextSector": 2
+        },
+        {
+            "x": 1,
+            "y": 6,
+            "nextSector": 5
+        },
+        {
+            "x": 1,
+            "y": 9,
+            "nextSector": -1
+        },
+        {
+            "x": 4,
+            "y": 9,
+            "nextSector": 6
+        },
+        {
+            "x": 4,
+            "y": 6,
+            "nextSector": 3
+        },
+        {
+            "x": 1,
+            "y": 6,
+            "nextSector": -1
+        },
+        {
+            "x": 0,
+            "y": 6,
+            "nextSector": -1
+        },
+        {
+            "x": 0,
+            "y": 9,
+            "nextSector": -1
+        },
+        {
+            "x": 1,
+            "y": 9,
+            "nextSector": 4
+        },
+        {
+            "x": 4,
+            "y": 6,
+            "nextSector": 4
+        },
+        {
+            "x": 4,
+            "y": 9,
+            "nextSector": -1
+        },
+        {
+            "x": 5,
+            "y": 9,
+            "nextSector": -1
+        },
+        {
+            "x": 5,
+            "y": 6,
+            "nextSector": -1
+        }
+    ]
+}

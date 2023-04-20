@@ -130,8 +130,8 @@ class Game(Scene):
         self.target = pygame.Surface((SETTINGS["viewWidth"], SETTINGS["viewHeight"]))
 
         # Create objects
-        self.sectors, self.walls, self.num_sectors = self.__load_map(path)
-        self.player = Player(pygame.Vector3(8, 4, 0), 0)
+        self.sectors, self.walls, self.num_sectors, player_pos = self.__load_map(path)
+        self.player = Player(pygame.Vector3(player_pos.x, player_pos.y, 0), 0)
         self.__font = None
         self.__options = None
 
@@ -157,7 +157,9 @@ class Game(Scene):
 
         num_sectors = len(data["sectors"])
 
-        return sectors, walls, num_sectors
+        player_pos = pygame.Vector2(data["player"]["x"], data["player"]["y"])
+
+        return sectors, walls, num_sectors, player_pos
 
     def load_content(self):
         pygame.event.set_grab(True)
@@ -338,15 +340,17 @@ class Game(Scene):
 
                     # Draw the ceiling
                     if ceiling_y < y_top[x]:
-                        pygame.draw.line(self.target, pygame.Color("#B8D0EB"), 
+                        pygame.draw.line(self.target, pygame.Color("#98B8DC"), 
                                          (view_width - 1 - x, view_height - 1 - ceiling_y), 
                                          (view_width - 1 - x, view_height - 1 - y_top[x]) )
+                        #self.target.set_at((int(view_width - 1 - x), int(view_height - 1 - y_top[x])), pygame.Color("#FF0000"))
 
                     # Draw the floor
                     if floor_y > y_bottom[x]:
                         pygame.draw.line(self.target, pygame.Color("#A663CC"), 
                                          (view_width - 1 - x, view_height - 1 - y_bottom[x]), 
                                          (view_width - 1 - x, view_height - 1 - floor_y))
+                        #self.target.set_at((int(view_width - 1 - x), int(view_height - 1 - y_bottom[x])), pygame.Color("#FF0000"))
 
                     # If this wall is a portal, draw the top and bottom wall
                     if wall_start.next_sector != -1:
@@ -358,7 +362,7 @@ class Game(Scene):
                         if sector_ceiling > next_sector_ceiling:
                             average = (transformed_start_wall + transformed_end_wall) / 2
                             distance = average.distance_to((0, 0)) / 2.5
-                            colour = pygame.Color("#D3F3EE")
+                            colour = pygame.Color("#B8D0EB")
                             colour = (clamp(colour.r / distance, 0, colour.r), 
                                       clamp(colour.g / distance, 0, colour.g),
                                       clamp(colour.b / distance, 0, colour.b))

@@ -1,4 +1,8 @@
 {
+    "player": {
+        "x": 8,
+        "y": 4
+    },
     "sectors": [
         {
             "startWall": 0,
