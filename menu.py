@@ -8,7 +8,7 @@ from font import Font
 from options import Options
 from settings import SETTINGS
 
-TEXT = pygame.Rect(0, 9, 312, 9)
+TEXT = pygame.Rect(0, 9, 328, 9)
 BACKGROUND = pygame.Rect(0, 0, 320, 180)
 
 class Menu(Scene):

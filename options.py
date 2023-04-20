@@ -173,7 +173,38 @@ class Options():
         self.__text_handler(mouse_pos, texts, states, rect)
         
     def __about(self, mouse_pos):
-        pass
+        texts = ["RENDERING A PSEUDO 3D PRO-", 
+                 "-JECTION BASED ON A 2D MAP", 
+                 "", 
+                 "MOVEMENT:WASD KEYS", 
+                 "CAMERA:ARROW KEYS OR MOUSE", 
+                 "", 
+                 "DEVELOPED BY:ZAIN AKRAM"]
+        
+        colour = pygame.Color("#A663CC")
+        rect = pygame.Rect(56, 95, 207, 65)
+        back_rect = pygame.Rect(144, 152, 32, 8)
+
+        # Draw outline
+        pygame.draw.rect(self.__unscaled, pygame.Color("#A663CC"), pygame.Rect(rect.x - 2, rect.y - 1, rect.width + 4, rect.height + 3), 1)
+
+        # Draw the title        
+        self.__font.render(self.__unscaled, "ABOUT", pygame.Vector2(140, 85), pygame.Color("#A663CC"))
+
+        for text in texts:
+            self.__font.render(self.__unscaled, text, pygame.Vector2(rect.x, rect.y), colour)
+            rect.y += 8
+
+        # Draw the back button
+        if back_rect.collidepoint(mouse_pos):
+            colour = pygame.Color("#B298DC")
+            self.__cursor = True
+            # Mouse left-click pressed
+            if self.__current_mouse[0] and not(self.__previous_mouse[0]):
+                self.__state = lambda mouse_pos: self.__menu(mouse_pos)
+        else:
+            colour = pygame.Color("#A663CC")
+        self.__font.render(self.__unscaled, "BACK", pygame.Vector2(back_rect.x, back_rect.y), colour)
 
     def __exit(self, mouse_pos):
         self.__application.is_running = False

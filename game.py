@@ -11,7 +11,7 @@ from options import Options
 from settings import SETTINGS
 from utility import *
 
-TEXT = pygame.Rect(0, 9, 312, 9)
+TEXT = pygame.Rect(0, 9, 328, 9)
 
 class Frustum:
     def __init__(self, angle, znear, zfar):
