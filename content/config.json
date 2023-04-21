@@ -26,5 +26,8 @@
     "linearViewMode": false,
     "fishEyeViewMode": false,
     "correctedViewMode": true,
+    "pixelLightMode": false,
+    "angleLightMode": false,
+    "sectorLightMode": true,
     "menuSpin": false
 }

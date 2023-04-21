@@ -202,12 +202,13 @@ class Options():
         #self.__application.load_level("content/map.json")
     
     def __options(self, mouse_pos):
-        texts = ["SENSITIVITY", "FOV", "PLAYER SPEED", "VIEW MODE", "LETTERBOX", "MENU SPIN", "BACK"]
+        texts = ["SENSITIVITY", "FOV", "PLAYER SPEED", "VIEW MODE", "LIGHTING", "LETTERBOX", "MENU SPIN", "BACK"]
         
         states = [lambda mouse_pos: self.__sensitivity(mouse_pos), 
                   lambda mouse_pos: self.__fov(mouse_pos), 
                   lambda mouse_pos: self.__player_speed(mouse_pos),
                   lambda mouse_pos: self.__view_mode(mouse_pos),
+                  lambda mouse_pos: self.__lighting(mouse_pos),
                   lambda mouse_pos: self.__letterbox(mouse_pos),
                   lambda mouse_pos: self.__menu_spin(mouse_pos),
                   lambda mouse_pos: self.__menu(mouse_pos)]
@@ -335,7 +336,77 @@ class Options():
         # Draw the title        
         self.__font.render(self.__unscaled, "VIEW MODE", pygame.Vector2(124, 85), pygame.Color("#A663CC"))
 
-        self.__text_handler(mouse_pos, texts, states, rect, "menuSpin")
+        self.__text_handler(mouse_pos, texts, states, rect)
+
+    def __lighting(self, mouse_pos):
+        texts = ["PIXEL", "ANGLE", "SECTOR", "BACK"]
+
+        states = [lambda mouse_pos: self.__pixel(mouse_pos), 
+                  lambda mouse_pos: self.__angle(mouse_pos), 
+                  lambda mouse_pos: self.__sector(mouse_pos), 
+                  lambda mouse_pos: self.__options(mouse_pos)]   
+            
+        rect = pygame.Rect(136, 95, 47, 8)
+
+        # Draw the title        
+        self.__font.render(self.__unscaled, "LIGHTING", pygame.Vector2(128, 85), pygame.Color("#A663CC"))
+
+        self.__text_handler(mouse_pos, texts, states, rect)
+
+    def __pixel(self, mouse_pos):
+        if not(SETTINGS["pixelLightMode"]):
+            texts = ["BOOL", "BACK"]
+        else:
+            texts = ["TRUE", "BACK"]
+            SETTINGS["angleLightMode"] = False
+            SETTINGS["sectorLightMode"] = False
+
+        states = [lambda mouse_pos: self.__pixel(mouse_pos), 
+                  lambda mouse_pos: self.__lighting(mouse_pos)]   
+        
+        rect = pygame.Rect(140, 95, 39, 8)
+
+        # Draw the title        
+        self.__font.render(self.__unscaled, "PIXEL", pygame.Vector2(140, 85), pygame.Color("#A663CC"))
+
+        self.__text_handler(mouse_pos, texts, states, rect, "pixelLightMode")
+
+    def __angle(self, mouse_pos):
+        if not(SETTINGS["angleLightMode"]):
+            texts = ["BOOL", "BACK"]
+        else:
+            texts = ["TRUE", "BACK"]
+            SETTINGS["pixelLightMode"] = False
+            SETTINGS["sectorLightMode"] = False
+
+        states = [lambda mouse_pos: self.__angle(mouse_pos), 
+                  lambda mouse_pos: self.__lighting(mouse_pos)]   
+        
+        rect = pygame.Rect(140, 95, 39, 8)
+
+        # Draw the title        
+        self.__font.render(self.__unscaled, "ANGLE", pygame.Vector2(140, 85), pygame.Color("#A663CC"))
+
+        self.__text_handler(mouse_pos, texts, states, rect, "angleLightMode")
+
+    def __sector(self, mouse_pos):
+        if not(SETTINGS["sectorLightMode"]):
+            texts = ["BOOL", "BACK"]
+        else:
+            texts = ["TRUE", "BACK"]
+            SETTINGS["angleLightMode"] = False
+            SETTINGS["pixelLightMode"] = False
+
+        states = [lambda mouse_pos: self.__sector(mouse_pos), 
+                  lambda mouse_pos: self.__lighting(mouse_pos)]   
+        
+        rect = pygame.Rect(140, 95, 39, 8)
+
+        # Draw the title        
+        self.__font.render(self.__unscaled, "SECTOR", pygame.Vector2(136, 85), pygame.Color("#A663CC"))
+
+        self.__text_handler(mouse_pos, texts, states, rect, "sectorLightMode")
+
 
     def __linear(self, mouse_pos):
         if not(SETTINGS["linearViewMode"]):

@@ -70,6 +70,45 @@ def screen_height_to_y(scaled_y, plane_height, player_z, transformed_y, view_hei
 def y_shear(plane_height, y, yaw):
     return plane_height - y * yaw
 
+# Shade walls based on the distance of the pixel from the player
+def shade_per_pixel(colour, x, screen_start_x, screen_end_x, start, end):
+    d = (screen_end_x - screen_start_x)
+    if d == 0:
+        d = 0.000001
+    distance = ((x - screen_start_x) * (end.y - start.y) / d + start.y) * 15
+
+    return (clamp(colour.r - distance, 0, colour.r), 
+            clamp(colour.g - distance, 0, colour.g),
+            clamp(colour.b - distance, 0, colour.b))
+
+# Shade walls based on the angle of the wall
+def shade_by_angle(colour, start: pygame.Vector2, end):
+    angle  = math.degrees(math.atan2(start.y - end.y, start.x - end.x))
+
+    if angle <= 0:
+        distance = angle / 360 * 80
+    else:
+        distance = -(angle / 360 * 80)
+
+    return (clamp(colour.r - distance, 0, 255), 
+            clamp(colour.g - distance, 0, 255),
+            clamp(colour.b - distance, 0, 255))
+
+# Shade the wall/floor/ceiling based on the distance from the player
+def shade_by_wall(colour, point, start, end):
+    average = (start + end) / 2
+    distance = average.distance_to((point)) * 15
+    return (clamp(colour.r - distance, 0, colour.r), 
+            clamp(colour.g - distance, 0, colour.g),
+            clamp(colour.b - distance, 0, colour.b))
+
+# Shade floor/ceiling by height
+def shade_by_height(colour, height):
+    distance = height * 15
+    return (clamp(colour.r - distance, 0, 255), 
+            clamp(colour.g - distance, 0, 255),
+            clamp(colour.b - distance, 0, 255))
+
 # -1 right, 1 left given a point and a line
 def point_side(point, line_start, line_end):
     return math.copysign(1, (line_end.x - line_start.x) * (point.y - line_start.y) - (line_end.y - line_start.y) * (point.x - line_start.x))

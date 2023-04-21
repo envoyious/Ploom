@@ -81,12 +81,10 @@ class Player:
             if (keys_down[pygame.K_DOWN]):
                 self.yaw = clamp(self.yaw - sensitivity * 3.8 * sensitivity_multiplier * delta_time, -self.__yaw_bounds, self.__yaw_bounds)
 
-
             # Backwards and forwards movement
             if (keys_down[pygame.K_w]):
                 self.position.x += math.cos(self.angle) * player_speed * delta_time
                 self.position.y += math.sin(self.angle) * player_speed * delta_time
-
             
             if (keys_down[pygame.K_s]):
                 self.position.x -= math.cos(self.angle) * player_speed * delta_time
@@ -105,8 +103,8 @@ class Player:
 
     def find_sector(self, sectors, walls):
         # Breath Fisrst Traversal is used as player is likely to be in neighbouring sectors
-        queue = Queue()
-        visited = list()
+        queue = Queue([])
+        visited = list([])
 
         visited.append(self.sector)
         queue.enqueue(self.sector)
@@ -142,6 +140,7 @@ class Game(Scene):
         # Create objects
         self.sectors, self.walls, self.num_sectors, player_pos = self.__load_map(path)
         self.player = Player(pygame.Vector3(player_pos.x, player_pos.y, 0), 0, 0)
+        self.player_height = SETTINGS["playerHeight"]
         self.__font = None
         self.__options = None
 
@@ -198,6 +197,13 @@ class Game(Scene):
             view_mode = 1
         elif SETTINGS["correctedViewMode"]:
             view_mode = 2
+
+        if SETTINGS["pixelLightMode"]:
+            light_mode = 0
+        elif SETTINGS["angleLightMode"]:
+            light_mode = 1
+        elif SETTINGS["sectorLightMode"]:
+            light_mode = 2
 
         hfov = SETTINGS["hfov"]
         vfov = SETTINGS["vfov"]
@@ -356,16 +362,33 @@ class Game(Scene):
                     # to be correct. To convert the calculated coordinates the viewing width/height - 1 (as pixels start from
                     # 0) is taken away by the x/y and the pixel is drawn at the resultant point
 
+                    sector_start = self.walls[sector.start_wall].position
+                    sector_end = self.walls[int(sector.start_wall + sector.num_walls / 2)].position
+
                     # Draw the ceiling
                     if ceiling_y < y_top[x]:
-                        pygame.draw.line(self.target, pygame.Color("#98B8DC"), 
+                        if light_mode == 0:
+                            colour = shade_by_wall(pygame.Color("#98B8DC"), (self.player.position.x, self.player.position.y), sector_start, sector_end)
+                        elif light_mode == 1:
+                            colour = shade_by_height(pygame.Color("#98B8DC"), -sector.ceiling + self.player_height + 5)
+                        else:
+                            colour = shade_by_wall(pygame.Color("#98B8DC"), (self.player.position.x, self.player.position.y), sector_start, sector_end)
+
+                        pygame.draw.line(self.target, colour, 
                                          (view_width - 1 - x, view_height - 1 - ceiling_y), 
                                          (view_width - 1 - x, view_height - 1 - y_top[x]) )
                         #self.target.set_at((int(view_width - 1 - x), int(view_height - 1 - y_top[x])), pygame.Color("#FF0000"))
 
                     # Draw the floor
                     if floor_y > y_bottom[x]:
-                        pygame.draw.line(self.target, pygame.Color("#A663CC"), 
+                        if light_mode == 0:
+                            colour = shade_by_wall(pygame.Color("#A663CC"), (self.player.position.x, self.player.position.y), sector_start, sector_end)
+                        elif light_mode == 1:
+                            colour = shade_by_height(pygame.Color("#A663CC"), sector.floor - self.player_height)
+                        else:
+                            colour = shade_by_wall(pygame.Color("#A663CC"), (self.player.position.x, self.player.position.y), sector_start, sector_end)
+
+                        pygame.draw.line(self.target, colour, 
                                          (view_width - 1 - x, view_height - 1 - y_bottom[x]), 
                                          (view_width - 1 - x, view_height - 1 - floor_y))
                         #self.target.set_at((int(view_width - 1 - x), int(view_height - 1 - y_bottom[x])), pygame.Color("#FF0000"))
@@ -378,24 +401,26 @@ class Game(Scene):
 
                         # If this sector's ceiling is higher than the next sector's ceiling, draw the upper wall
                         if sector_ceiling > next_sector_ceiling:
-                            average = (transformed_start_wall + transformed_end_wall) / 2
-                            distance = average.distance_to((0, 0)) / 2.5
-                            colour = pygame.Color("#B8D0EB")
-                            colour = (clamp(colour.r / distance, 0, colour.r), 
-                                      clamp(colour.g / distance, 0, colour.g),
-                                      clamp(colour.b / distance, 0, colour.b))
+                            if light_mode == 0:
+                                colour = shade_per_pixel(pygame.Color("#B8D0EB"), x, screen_start_x, screen_end_x, transformed_start_wall, transformed_end_wall)
+                            elif light_mode == 1:
+                                colour = shade_by_angle(pygame.Color("#B8D0EB"), wall_start.position, wall_end.position)
+                            else:
+                                colour = shade_by_wall(pygame.Color("#B8D0EB"), (0, 0), transformed_start_wall, transformed_end_wall)
+
                             pygame.draw.line(self.target, colour, 
                                              (view_width - 1 - x, view_height - 1 - portal_ceiling_y), 
                                              (view_width - 1 - x, view_height - 1 - ceiling_y) )
 
                         # If this sector's floor is lower than the next sector's floor, draw the lower wall
                         if sector_floor < next_sector_floor:
-                            average = (transformed_start_wall + transformed_end_wall) / 2
-                            distance = average.distance_to((0, 0)) / 2.5
-                            colour = pygame.Color("#B298DC")
-                            colour = (clamp(colour.r / distance, 0, colour.r), 
-                                      clamp(colour.g / distance, 0, colour.g),
-                                      clamp(colour.b / distance, 0, colour.b))
+                            if light_mode == 0:
+                                colour = shade_per_pixel(pygame.Color("#B298DC"), x, screen_start_x, screen_end_x, transformed_start_wall, transformed_end_wall)
+                            elif light_mode == 1:
+                                colour = shade_by_angle(pygame.Color("#B298DC"), wall_start.position, wall_end.position)
+                            else:
+                                colour = shade_by_wall(pygame.Color("#B298DC"), (0, 0), transformed_start_wall, transformed_end_wall)
+
                             pygame.draw.line(self.target, colour, 
                                              (view_width - 1 - x, view_height - 1 - floor_y), 
                                              (view_width - 1 - x, view_height - 1 - portal_floor_y))
@@ -405,12 +430,13 @@ class Game(Scene):
                         y_bottom[x] = clamp(max(max(floor_y, portal_floor_y), y_bottom[x]), 0, view_height - 1)
                     else:
                         # Draw the wall
-                        average = (transformed_start_wall + transformed_end_wall) / 2
-                        distance = average.distance_to((0, 0)) / 2.5
-                        colour = pygame.Color("#6F2DBD")
-                        colour = (clamp(colour.r / distance, 0, colour.r), 
-                                  clamp(colour.g / distance, 0, colour.g),
-                                  clamp(colour.b / distance, 0, colour.b))
+                        if light_mode == 0:
+                            colour = shade_per_pixel(pygame.Color("#6F2DBD"), x, screen_start_x, screen_end_x, transformed_start_wall, transformed_end_wall)
+                        elif light_mode == 1:
+                            colour = shade_by_angle(pygame.Color("#6F2DBD"), wall_start.position, wall_end.position)
+                        else:
+                            colour = shade_by_wall(pygame.Color("#6F2DBD"), (0, 0), transformed_start_wall, transformed_end_wall)
+
                         pygame.draw.line(self.target, colour, 
                                          (view_width - 1 - x, view_height - 1 - floor_y), 
                                          (view_width - 1 - x, view_height - 1 - ceiling_y))
