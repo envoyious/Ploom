@@ -16,6 +16,7 @@
     "vfovLowerBound": 5, 
     "znear": 0.000001,
     "zfar": 100,
+    "yawBounds": 4,
     "playerHeight": 2.4,
     "baseSensitivity": 0.00046,
     "sensitivityMultiplier": 1,

@@ -62,10 +62,13 @@ def screen_angle_to_x(angle, hfov, view_width, view_mode):
         # Corrected view
         return int((-math.tan(math.pi * angle / (2 * hfov)) + 1) * view_width / 2)
 
-
 # Convert ceiling and floor heights into a y coordinate
-def screen_height_to_y(scaled_y, plane_height, player, view_height):
-    return int(view_height / 2 + (plane_height - player.position.z) * scaled_y)
+def screen_height_to_y(scaled_y, plane_height, player_z, transformed_y, view_height, yaw):
+    return int(view_height / 2 + (y_shear(plane_height, transformed_y, yaw) - player_z) * scaled_y)
+
+# Apply y-shearing by shifting pixels up or down
+def y_shear(plane_height, y, yaw):
+    return plane_height - y * yaw
 
 # -1 right, 1 left given a point and a line
 def point_side(point, line_start, line_end):

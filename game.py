@@ -43,14 +43,16 @@ class Portal:
         self.end_x = end_x
 
 class Player:
-    def __init__(self, position, angle):
+    def __init__(self, position, angle, yaw):
         self.position = position
         self.angle = math.radians(angle)
+        self.yaw = yaw
+        self.__yaw_bounds = SETTINGS["yawBounds"]
         self.sector = 0
         self.__previous_key = pygame.key.get_pressed()
 
     def update(self, delta_time):
-            mouse_x = pygame.mouse.get_rel()[0]
+            mouse_x, mouse_y  = pygame.mouse.get_rel()
             keys_down = pygame.key.get_pressed()
 
             sensitivity = SETTINGS["baseSensitivity"] * SETTINGS["sensitivityMultiplier"]
@@ -65,6 +67,7 @@ class Player:
             # Mouse rotation
             if (pygame.event.get_grab()):
                 self.angle += mouse_x * sensitivity
+                self.yaw = clamp(self.yaw - mouse_y * sensitivity * 3.8, -self.__yaw_bounds, self.__yaw_bounds)
 
             # Left and right rotation
             if (keys_down[pygame.K_LEFT]):
@@ -72,13 +75,20 @@ class Player:
             if (keys_down[pygame.K_RIGHT]):
                 self.angle += sensitivity * sensitivity_multiplier * delta_time
 
+            # Up and down rotaion
+            if (keys_down[pygame.K_UP]):
+                self.yaw = clamp(self.yaw + sensitivity * 3.8 * sensitivity_multiplier * delta_time, -self.__yaw_bounds, self.__yaw_bounds)
+            if (keys_down[pygame.K_DOWN]):
+                self.yaw = clamp(self.yaw - sensitivity * 3.8 * sensitivity_multiplier * delta_time, -self.__yaw_bounds, self.__yaw_bounds)
+
+
             # Backwards and forwards movement
-            if (keys_down[pygame.K_UP] or keys_down[pygame.K_w]):
+            if (keys_down[pygame.K_w]):
                 self.position.x += math.cos(self.angle) * player_speed * delta_time
                 self.position.y += math.sin(self.angle) * player_speed * delta_time
 
             
-            if (keys_down[pygame.K_DOWN] or keys_down[pygame.K_s]):
+            if (keys_down[pygame.K_s]):
                 self.position.x -= math.cos(self.angle) * player_speed * delta_time
                 self.position.y -= math.sin(self.angle) * player_speed * delta_time
 
@@ -131,7 +141,7 @@ class Game(Scene):
 
         # Create objects
         self.sectors, self.walls, self.num_sectors, player_pos = self.__load_map(path)
-        self.player = Player(pygame.Vector3(player_pos.x, player_pos.y, 0), 0)
+        self.player = Player(pygame.Vector3(player_pos.x, player_pos.y, 0), 0, 0)
         self.__font = None
         self.__options = None
 
@@ -197,7 +207,7 @@ class Game(Scene):
         #region Render walls
 
         # Keep track of whether or not a sector has been drawn
-        rendered_sectors = [False for i in range(self.num_sectors)]
+        #rendered_sectors = [False for i in range(self.num_sectors)]
 
         # Keep track of where on the screen a portal is for each x value
         y_bottom = [0 for i in range(view_width)]
@@ -215,10 +225,10 @@ class Game(Scene):
             stack.pop()
 
             # Do not render the sector if it has already been drawn
-            if rendered_sectors[portal.sector_id]:
-                continue
+            #if rendered_sectors[portal.sector_id]:
+            #    continue
 
-            rendered_sectors[portal.sector_id] = True
+            #rendered_sectors[portal.sector_id] = True
             sector = self.sectors[portal.sector_id]
 
             # Loop over every wall within the sector
@@ -310,14 +320,22 @@ class Game(Scene):
                     scaled_end_y = vfov * view_height / transformed_end_wall.y
                 else:
                     scaled_end_y = vfov * view_height / 0.000001
+
+                player_z = self.player.position.z 
                 
                 # Calculate the y values for the floor and ceiling of the player's sector
-                floor_screen_y = screen_height_to_y(scaled_start_y, sector.floor, self.player, view_height), screen_height_to_y(scaled_end_y, sector.floor, self.player, view_height)  
-                ceiling_screen_y = screen_height_to_y(scaled_start_y, sector.ceiling, self.player, view_height), screen_height_to_y(scaled_end_y, sector.ceiling, self.player, view_height)
+                floor_screen_y = screen_height_to_y(scaled_start_y, sector_floor, player_z, transformed_start_wall.y, view_height, self.player.yaw), \
+                                 screen_height_to_y(scaled_end_y, sector_floor, player_z, transformed_end_wall.y, view_height, self.player.yaw)  
+                
+                ceiling_screen_y = screen_height_to_y(scaled_start_y, sector_ceiling, player_z, transformed_start_wall.y, view_height, self.player.yaw), \
+                                   screen_height_to_y(scaled_end_y, sector_ceiling, player_z, transformed_end_wall.y, view_height, self.player.yaw)
 
                 # Calculate the y values for the floor and ceiling of the next sector
-                portal_floor_screen_y = screen_height_to_y(scaled_start_y, next_sector_floor, self.player, view_height), screen_height_to_y(scaled_end_y, next_sector_floor, self.player, view_height)
-                portal_ceiling_screen_y = screen_height_to_y(scaled_start_y, next_sector_ceiling, self.player, view_height), screen_height_to_y(scaled_end_y, next_sector_ceiling, self.player, view_height)
+                portal_floor_screen_y = screen_height_to_y(scaled_start_y, next_sector_floor, player_z, transformed_start_wall.y, view_height, self.player.yaw), \
+                                        screen_height_to_y(scaled_end_y, next_sector_floor, player_z, transformed_end_wall.y, view_height, self.player.yaw)
+                
+                portal_ceiling_screen_y = screen_height_to_y(scaled_start_y, next_sector_ceiling, player_z, transformed_start_wall.y, view_height, self.player.yaw), \
+                                          screen_height_to_y(scaled_end_y, next_sector_ceiling, player_z, transformed_end_wall.y, view_height, self.player.yaw)
 
                 # Loop over the x cordinates and draw a line
                 for x in range(clamp(screen_start_x, portal.start_x, portal.end_x), clamp(screen_end_x, portal.start_x, portal.end_x) + 1):
