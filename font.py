@@ -9,7 +9,7 @@ class Font:
         self.__char_order = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789%°:- "
         self.__characters = {}
 
-        self.spacing = 0
+        self.__spacing = 0
 
         char_count = 0 
         for x in range(texture.get_width() + 8):
@@ -33,4 +33,4 @@ class Font:
             letter.fill(colour, special_flags=pygame.BLEND_MIN)
             
             target.blit(letter, (posistion.x + x_offset, posistion.y))
-            x_offset += self.__char_width + self.spacing
+            x_offset += self.__char_width + self.__spacing

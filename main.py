@@ -48,7 +48,7 @@ class App(Engine):
 
         #region Render target resizing
 
-        target = self.scene.target
+        target = self.scene.get_target()
         window_width, window_height = self._graphics.get_size()
         scale = min(window_width / view_width, window_height / view_height)
 

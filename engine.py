@@ -88,8 +88,14 @@ class Engine:
 
 class Scene:
     def __init__(self, application):
-        self.application = application
-        self.target = pygame.Surface((640, 360))
+        self._application = application
+        self._target = pygame.Surface((640, 360))
+
+    def get_target(self):
+        return self._target
+    
+    def get_application(self):
+        return self._application
 
     def load_content(self):
         pass

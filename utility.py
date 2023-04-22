@@ -10,7 +10,7 @@ def clamp(value, min_value, max_value):
          
 # Transforms point a to be relative player
 def translate(point, player):
-    return pygame.Vector2(point.position.x - player.position.x, point.position.y - player.position.y)
+    return pygame.Vector2(point.position.x - player.get_position().x, point.position.y - player.get_position().y)
 
 # Rotate a point given an angle
 def rotate(point, angle):

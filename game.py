@@ -44,70 +44,85 @@ class Portal:
 
 class Player:
     def __init__(self, position, angle, yaw):
-        self.position = position
-        self.angle = math.radians(angle)
-        self.yaw = yaw
+        self.__position = position
+        self.__angle = math.radians(angle)
+        self.__yaw = yaw
+        self.__sector = 0
+
         self.__yaw_bounds = SETTINGS["yawBounds"]
-        self.sector = 0
         self.__previous_key = pygame.key.get_pressed()
 
-    def update(self, delta_time):
-            mouse_x, mouse_y  = pygame.mouse.get_rel()
-            keys_down = pygame.key.get_pressed()
+    def get_position(self):
+        return self.__position
+    
+    def get_angle(self):
+        return self.__angle
+    
+    def get_yaw(self):
+        return self.__yaw
+    
+    def get_sector(self):
+        return self.__sector
 
-            sensitivity = SETTINGS["baseSensitivity"] * SETTINGS["sensitivityMultiplier"]
-            sensitivity_multiplier = SETTINGS["keyboardSensitivityMultiplier"]
-            player_speed = SETTINGS["basePlayerSpeed"] * SETTINGS["playerSpeedMultiplier"]
+    def update(self, delta_time, floor_height):
+        mouse_x, mouse_y  = pygame.mouse.get_rel()
+        keys_down = pygame.key.get_pressed()
 
-            # Activate/Deactivate mouse input
-            if keys_down[pygame.K_ESCAPE] and not(self.__previous_key[pygame.K_ESCAPE]):
-                #pygame.mouse.set_visible(not(pygame.mouse.get_visible()))
-                pygame.event.set_grab(not(pygame.event.get_grab()))
+        sensitivity = SETTINGS["baseSensitivity"] * SETTINGS["sensitivityMultiplier"]
+        sensitivity_multiplier = SETTINGS["keyboardSensitivityMultiplier"]
+        player_speed = SETTINGS["basePlayerSpeed"] * SETTINGS["playerSpeedMultiplier"]
 
-            # Mouse rotation
-            if (pygame.event.get_grab()):
-                self.angle += mouse_x * sensitivity
-                self.yaw = clamp(self.yaw - mouse_y * sensitivity * 3.8, -self.__yaw_bounds, self.__yaw_bounds)
+        # Activate/Deactivate mouse input
+        if keys_down[pygame.K_ESCAPE] and not(self.__previous_key[pygame.K_ESCAPE]):
+            #pygame.mouse.set_visible(not(pygame.mouse.get_visible()))
+            pygame.event.set_grab(not(pygame.event.get_grab()))
 
-            # Left and right rotation
-            if (keys_down[pygame.K_LEFT]):
-                self.angle -= sensitivity * sensitivity_multiplier * delta_time
-            if (keys_down[pygame.K_RIGHT]):
-                self.angle += sensitivity * sensitivity_multiplier * delta_time
+        # Mouse rotation
+        if (pygame.event.get_grab()):
+            self.__angle += mouse_x * sensitivity
+            self.__yaw = clamp(self.__yaw - mouse_y * sensitivity * 3.8, -self.__yaw_bounds, self.__yaw_bounds)
 
-            # Up and down rotaion
-            if (keys_down[pygame.K_UP]):
-                self.yaw = clamp(self.yaw + sensitivity * 3.8 * sensitivity_multiplier * delta_time, -self.__yaw_bounds, self.__yaw_bounds)
-            if (keys_down[pygame.K_DOWN]):
-                self.yaw = clamp(self.yaw - sensitivity * 3.8 * sensitivity_multiplier * delta_time, -self.__yaw_bounds, self.__yaw_bounds)
+        # Left and right rotation
+        if (keys_down[pygame.K_LEFT]):
+            self.__angle -= sensitivity * sensitivity_multiplier * delta_time
+        if (keys_down[pygame.K_RIGHT]):
+            self.__angle += sensitivity * sensitivity_multiplier * delta_time
 
-            # Backwards and forwards movement
-            if (keys_down[pygame.K_w]):
-                self.position.x += math.cos(self.angle) * player_speed * delta_time
-                self.position.y += math.sin(self.angle) * player_speed * delta_time
-            
-            if (keys_down[pygame.K_s]):
-                self.position.x -= math.cos(self.angle) * player_speed * delta_time
-                self.position.y -= math.sin(self.angle) * player_speed * delta_time
+        # Up and down rotaion
+        if (keys_down[pygame.K_UP]):
+            self.__yaw = clamp(self.__yaw + sensitivity * 3.8 * sensitivity_multiplier * delta_time, -self.__yaw_bounds, self.__yaw_bounds)
+        if (keys_down[pygame.K_DOWN]):
+            self.__yaw = clamp(self.__yaw - sensitivity * 3.8 * sensitivity_multiplier * delta_time, -self.__yaw_bounds, self.__yaw_bounds)
 
-            # Strafe left and right
-            if (keys_down[pygame.K_a]):
-                self.position.x += math.sin(self.angle) * player_speed * delta_time
-                self.position.y -= math.cos(self.angle) * player_speed * delta_time
-            
-            if (keys_down[pygame.K_d]):
-                self.position.x -= math.sin(self.angle) * player_speed * delta_time
-                self.position.y += math.cos(self.angle) * player_speed * delta_time
+        # Backwards and forwards movement
+        if (keys_down[pygame.K_w]):
+            self.__position.x += math.cos(self.__angle) * player_speed * delta_time
+            self.__position.y += math.sin(self.__angle) * player_speed * delta_time
+        
+        if (keys_down[pygame.K_s]):
+            self.__position.x -= math.cos(self.__angle) * player_speed * delta_time
+            self.__position.y -= math.sin(self.__angle) * player_speed * delta_time
 
-            self.__previous_key = keys_down
+        # Strafe left and right
+        if (keys_down[pygame.K_a]):
+            self.__position.x += math.sin(self.__angle) * player_speed * delta_time
+            self.__position.y -= math.cos(self.__angle) * player_speed * delta_time
+        
+        if (keys_down[pygame.K_d]):
+            self.__position.x -= math.sin(self.__angle) * player_speed * delta_time
+            self.__position.y += math.cos(self.__angle) * player_speed * delta_time
+
+        self.__position.z = floor_height + SETTINGS["playerHeight"]
+
+        self.__previous_key = keys_down
 
     def find_sector(self, sectors, walls):
         # Breath Fisrst Traversal is used as player is likely to be in neighbouring sectors
         queue = Queue([])
         visited = list([])
 
-        visited.append(self.sector)
-        queue.enqueue(self.sector)
+        visited.append(self.__sector)
+        queue.enqueue(self.__sector)
         found = None
 
         while len(queue) != 0:
@@ -115,7 +130,7 @@ class Player:
             queue.dequeue()
             sector = sectors[id]
 
-            if point_in_sector(self.position, sector, walls):
+            if point_in_sector(self.__position, sector, walls):
                 found = id
                 break
 
@@ -128,19 +143,19 @@ class Player:
 
         if found == None:
             print("ERROR: Player is not in a sector!")
-            self.sector = 0
+            self.__sector = 0
         else:
-            self.sector = found
+            self.__sector = found
 
 class Game(Scene):
     def __init__(self, application, path):
         super().__init__(application)
-        self.target = pygame.Surface((SETTINGS["viewWidth"], SETTINGS["viewHeight"]))
+        self._target = pygame.Surface((SETTINGS["viewWidth"], SETTINGS["viewHeight"]))
 
         # Create objects
-        self.sectors, self.walls, self.num_sectors, player_pos = self.__load_map(path)
-        self.player = Player(pygame.Vector3(player_pos.x, player_pos.y, 0), 0, 0)
-        self.player_height = SETTINGS["playerHeight"]
+        self.__sectors, self.walls, self.num_sectors, player_pos = self.__load_map(path)
+        self.__player = Player(pygame.Vector3(player_pos.x, player_pos.y, 0), 0, 0)
+        self.__player_height = SETTINGS["playerHeight"]
         self.__font = None
         self.__options = None
 
@@ -174,19 +189,19 @@ class Game(Scene):
         pygame.event.set_grab(True)
         self.textures = pygame.image.load("content/textures.png").convert_alpha()
         self.__font = Font(self.textures.subsurface(TEXT))
-        self.__options = Options(self.__font, self.textures, self.application)
+        self.__options = Options(self.__font, self.textures, self._application)
         # super().load_content()
 
     def update(self, delta_time):
         # Update the player
-        self.player.update(delta_time)
-        self.player.find_sector(self.sectors, self.walls)
-        self.player.position.z = self.sectors[self.player.sector].floor + SETTINGS["playerHeight"]
+        floor_height = self.__sectors[self.__player.get_sector()].floor
+        self.__player.update(delta_time, floor_height)
+        self.__player.find_sector(self.__sectors, self.walls)
 
         super().update(delta_time)
 
     def render(self):
-        self.target.fill(SETTINGS["clearColour"])
+        self._target.fill(SETTINGS["clearColour"])
         
         view_width = SETTINGS["viewWidth"]
         view_height = SETTINGS["viewHeight"]
@@ -223,7 +238,7 @@ class Game(Scene):
         frustum = Frustum(hfov, znear, zfar)
 
         # Start rendering at the sector which contains the player
-        stack = Stack([Portal(self.player.sector, 0, view_width - 1)])
+        stack = Stack([Portal(self.__player.get_sector(), 0, view_width - 1)])
 
         while len(stack) != 0:
             # The original portal contains the whole screen, every subsequent portal is a smaller portion of the screen
@@ -235,7 +250,7 @@ class Game(Scene):
             #    continue
 
             #rendered_sectors[portal.sector_id] = True
-            sector = self.sectors[portal.sector_id]
+            sector = self.__sectors[portal.sector_id]
 
             # Loop over every wall within the sector
             for i in range(sector.num_walls):
@@ -250,12 +265,12 @@ class Game(Scene):
                 wall_end: Wall = self.walls[n] 
 
                 # Do not render the backside of a portal
-                if wall_start.next_sector == self.player.sector:
+                if wall_start.next_sector == self.__player.get_sector():
                     continue
 
                 # Transform the wall points to be rotated around and relative to the player
-                transformed_start_wall = transform(wall_start, self.player, self.player.angle)
-                transformed_end_wall = transform(wall_end, self.player, self.player.angle)
+                transformed_start_wall = transform(wall_start, self.__player, self.__player.get_angle())
+                transformed_end_wall = transform(wall_end, self.__player, self.__player.get_angle())
 
                 # Both wall points are behind the player, do not render the wall
                 if transformed_start_wall.y <= 0 and transformed_end_wall.y <= 0:
@@ -312,8 +327,8 @@ class Game(Scene):
                 next_sector_ceiling = 0
 
                 if wall_start.next_sector != -1:
-                    next_sector_floor = self.sectors[wall_start.next_sector].floor
-                    next_sector_ceiling = self.sectors[wall_start.next_sector].ceiling
+                    next_sector_floor = self.__sectors[wall_start.next_sector].floor
+                    next_sector_ceiling = self.__sectors[wall_start.next_sector].ceiling
 
                 # Calculate the y positions of the wall on screen by projecting the points in 3D
                 # Avoid division by zero error
@@ -327,21 +342,21 @@ class Game(Scene):
                 else:
                     scaled_end_y = vfov * view_height / 0.000001
 
-                player_z = self.player.position.z 
+                player_z = self.__player.get_position().z 
                 
                 # Calculate the y values for the floor and ceiling of the player's sector
-                floor_screen_y = screen_height_to_y(scaled_start_y, sector_floor, player_z, transformed_start_wall.y, view_height, self.player.yaw), \
-                                 screen_height_to_y(scaled_end_y, sector_floor, player_z, transformed_end_wall.y, view_height, self.player.yaw)  
+                floor_screen_y = screen_height_to_y(scaled_start_y, sector_floor, player_z, transformed_start_wall.y, view_height, self.__player.get_yaw()), \
+                                 screen_height_to_y(scaled_end_y, sector_floor, player_z, transformed_end_wall.y, view_height, self.__player.get_yaw())  
                 
-                ceiling_screen_y = screen_height_to_y(scaled_start_y, sector_ceiling, player_z, transformed_start_wall.y, view_height, self.player.yaw), \
-                                   screen_height_to_y(scaled_end_y, sector_ceiling, player_z, transformed_end_wall.y, view_height, self.player.yaw)
+                ceiling_screen_y = screen_height_to_y(scaled_start_y, sector_ceiling, player_z, transformed_start_wall.y, view_height, self.__player.get_yaw()), \
+                                   screen_height_to_y(scaled_end_y, sector_ceiling, player_z, transformed_end_wall.y, view_height, self.__player.get_yaw())
 
                 # Calculate the y values for the floor and ceiling of the next sector
-                portal_floor_screen_y = screen_height_to_y(scaled_start_y, next_sector_floor, player_z, transformed_start_wall.y, view_height, self.player.yaw), \
-                                        screen_height_to_y(scaled_end_y, next_sector_floor, player_z, transformed_end_wall.y, view_height, self.player.yaw)
+                portal_floor_screen_y = screen_height_to_y(scaled_start_y, next_sector_floor, player_z, transformed_start_wall.y, view_height, self.__player.get_yaw()), \
+                                        screen_height_to_y(scaled_end_y, next_sector_floor, player_z, transformed_end_wall.y, view_height, self.__player.get_yaw())
                 
-                portal_ceiling_screen_y = screen_height_to_y(scaled_start_y, next_sector_ceiling, player_z, transformed_start_wall.y, view_height, self.player.yaw), \
-                                          screen_height_to_y(scaled_end_y, next_sector_ceiling, player_z, transformed_end_wall.y, view_height, self.player.yaw)
+                portal_ceiling_screen_y = screen_height_to_y(scaled_start_y, next_sector_ceiling, player_z, transformed_start_wall.y, view_height, self.__player.get_yaw()), \
+                                          screen_height_to_y(scaled_end_y, next_sector_ceiling, player_z, transformed_end_wall.y, view_height, self.__player.get_yaw())
 
                 # Loop over the x cordinates and draw a line
                 for x in range(clamp(screen_start_x, portal.start_x, portal.end_x), clamp(screen_end_x, portal.start_x, portal.end_x) + 1):
@@ -368,13 +383,13 @@ class Game(Scene):
                     # Draw the ceiling
                     if ceiling_y < y_top[x]:
                         if light_mode == 0:
-                            colour = shade_by_wall(pygame.Color("#98B8DC"), (self.player.position.x, self.player.position.y), sector_start, sector_end)
+                            colour = shade_by_wall(pygame.Color("#98B8DC"), (self.__player.get_position().x, self.__player.get_position().y), sector_start, sector_end)
                         elif light_mode == 1:
-                            colour = shade_by_height(pygame.Color("#98B8DC"), -sector.ceiling + self.player_height + 5)
+                            colour = shade_by_height(pygame.Color("#98B8DC"), -sector.ceiling + self.__player_height + 5)
                         else:
-                            colour = shade_by_wall(pygame.Color("#98B8DC"), (self.player.position.x, self.player.position.y), sector_start, sector_end)
+                            colour = shade_by_wall(pygame.Color("#98B8DC"), (self.__player.get_position().x, self.__player.get_position().y), sector_start, sector_end)
 
-                        pygame.draw.line(self.target, colour, 
+                        pygame.draw.line(self._target, colour, 
                                          (view_width - 1 - x, view_height - 1 - ceiling_y), 
                                          (view_width - 1 - x, view_height - 1 - y_top[x]) )
                         #self.target.set_at((int(view_width - 1 - x), int(view_height - 1 - y_top[x])), pygame.Color("#FF0000"))
@@ -382,13 +397,13 @@ class Game(Scene):
                     # Draw the floor
                     if floor_y > y_bottom[x]:
                         if light_mode == 0:
-                            colour = shade_by_wall(pygame.Color("#A663CC"), (self.player.position.x, self.player.position.y), sector_start, sector_end)
+                            colour = shade_by_wall(pygame.Color("#A663CC"), (self.__player.get_position().x, self.__player.get_position().y), sector_start, sector_end)
                         elif light_mode == 1:
-                            colour = shade_by_height(pygame.Color("#A663CC"), sector.floor - self.player_height)
+                            colour = shade_by_height(pygame.Color("#A663CC"), sector.floor - self.__player_height)
                         else:
-                            colour = shade_by_wall(pygame.Color("#A663CC"), (self.player.position.x, self.player.position.y), sector_start, sector_end)
+                            colour = shade_by_wall(pygame.Color("#A663CC"), (self.__player.get_position().x, self.__player.get_position().y), sector_start, sector_end)
 
-                        pygame.draw.line(self.target, colour, 
+                        pygame.draw.line(self._target, colour, 
                                          (view_width - 1 - x, view_height - 1 - y_bottom[x]), 
                                          (view_width - 1 - x, view_height - 1 - floor_y))
                         #self.target.set_at((int(view_width - 1 - x), int(view_height - 1 - y_bottom[x])), pygame.Color("#FF0000"))
@@ -408,7 +423,7 @@ class Game(Scene):
                             else:
                                 colour = shade_by_wall(pygame.Color("#B8D0EB"), (0, 0), transformed_start_wall, transformed_end_wall)
 
-                            pygame.draw.line(self.target, colour, 
+                            pygame.draw.line(self._target, colour, 
                                              (view_width - 1 - x, view_height - 1 - portal_ceiling_y), 
                                              (view_width - 1 - x, view_height - 1 - ceiling_y) )
 
@@ -421,7 +436,7 @@ class Game(Scene):
                             else:
                                 colour = shade_by_wall(pygame.Color("#B298DC"), (0, 0), transformed_start_wall, transformed_end_wall)
 
-                            pygame.draw.line(self.target, colour, 
+                            pygame.draw.line(self._target, colour, 
                                              (view_width - 1 - x, view_height - 1 - floor_y), 
                                              (view_width - 1 - x, view_height - 1 - portal_floor_y))
 
@@ -437,7 +452,7 @@ class Game(Scene):
                         else:
                             colour = shade_by_wall(pygame.Color("#6F2DBD"), (0, 0), transformed_start_wall, transformed_end_wall)
 
-                        pygame.draw.line(self.target, colour, 
+                        pygame.draw.line(self._target, colour, 
                                          (view_width - 1 - x, view_height - 1 - floor_y), 
                                          (view_width - 1 - x, view_height - 1 - ceiling_y))
 
@@ -452,17 +467,17 @@ class Game(Scene):
         line_length = 36
         offset = hfov / 2
 
-        pygame.draw.line(self.target, pygame.Color("red"), 
-                         (self.player.position.x * scale_factor, self.player.position.y * scale_factor), 
-                         (int(math.cos(-offset + self.player.angle) * line_length + self.player.position.x * scale_factor), int(math.sin(-offset + self.player.angle) * line_length + self.player.position.y * scale_factor)))
+        pygame.draw.line(self._target, pygame.Color("red"), 
+                         (self.__player.get_position().x * scale_factor, self.__player.get_position().y * scale_factor), 
+                         (int(math.cos(-offset + self.__player.get_angle()) * line_length + self.__player.get_position().x * scale_factor), int(math.sin(-offset + self.__player.get_angle()) * line_length + self.__player.get_position().y * scale_factor)))
         
-        pygame.draw.line(self.target, pygame.Color("red"), 
-                         (self.player.position.x * scale_factor, self.player.position.y * scale_factor), 
-                         (int(math.cos(offset + self.player.angle) * line_length + self.player.position.x * scale_factor), int(math.sin(offset + self.player.angle) * line_length + self.player.position.y * scale_factor)))
+        pygame.draw.line(self._target, pygame.Color("red"), 
+                         (self.__player.get_position().x * scale_factor, self.__player.get_position().y * scale_factor), 
+                         (int(math.cos(offset + self.__player.get_angle()) * line_length + self.__player.get_position().x * scale_factor), int(math.sin(offset + self.__player.get_angle()) * line_length + self.__player.get_position().y * scale_factor)))
 
-        self.target.set_at((int(self.player.position.x * scale_factor), int(self.player.position.y * scale_factor)), pygame.Color("green"))
+        self._target.set_at((int(self.__player.get_position().x * scale_factor), int(self.__player.get_position().y * scale_factor)), pygame.Color("green"))
         
-        for sector in self.sectors:
+        for sector in self.__sectors:
             for i in range(sector.num_walls):
                 p1 = self.walls[sector.start_wall + i]
 
@@ -477,13 +492,13 @@ class Game(Scene):
                 else:
                     colour = pygame.Color("red")
                 
-                pygame.draw.line(self.target, colour, 
+                pygame.draw.line(self._target, colour, 
                                  (p1.position.x * scale_factor + 1, p1.position.y * scale_factor + 1), 
                                  (p2.position.x * scale_factor + 1, p2.position.y * scale_factor + 1))
 
         # Menu
         if (not(pygame.event.get_grab())):
-            self.target.blit(self.__darken, (0, 0))
-            self.__options.render(self.target)
+            self._target.blit(self.__darken, (0, 0))
+            self.__options.render(self._target)
 
         super().render()
