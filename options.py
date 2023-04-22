@@ -1,4 +1,4 @@
-# PLOOM, 0.3 WIP
+# PLOOM, 1.0 FINAL
 # Developed by Zain Akram
 
 import math
@@ -196,7 +196,12 @@ class Options():
                         self.__application.load_level("content/maps/" + self.__maps[i])
             else:
                 colour = pygame.Color("#A663CC")
-            self.__font.render(self.__unscaled, text, pygame.Vector2(rect.x, rect.y), colour)
+            
+            try:
+                self.__font.render(self.__unscaled, text, pygame.Vector2(rect.x, rect.y), colour)
+            except KeyError as symbol:
+                raise KeyError("Symbol " + str(symbol) + " within file name is not in the font!")
+            
             rect.y += 8
 
         #self.__application.load_level("content/map.json")

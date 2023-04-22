@@ -1,4 +1,4 @@
-# PLOOM, 0.3 WIP
+# PLOOM, 1.0 FINAL
 # Developed by Zain Akram
 
 import sys, time
