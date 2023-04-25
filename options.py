@@ -161,7 +161,7 @@ class Options():
         rect = pygame.Rect(132, 96, 55, 8)
 
         self.__text_handler(mouse_pos, texts, states, rect)
-        
+
     def __start(self, mouse_pos):
         texts = []
         states = []
@@ -200,7 +200,7 @@ class Options():
             try:
                 self.__font.render(self.__unscaled, text, pygame.Vector2(rect.x, rect.y), colour)
             except KeyError as symbol:
-                raise KeyError("Symbol " + str(symbol) + " within file name is not in the font!")
+                print("ERROR: Symbol " + str(symbol) + " within file name is not in the font!")
             
             rect.y += 8
 
@@ -224,7 +224,7 @@ class Options():
         self.__font.render(self.__unscaled, "OPTIONS", pygame.Vector2(132, 85), pygame.Color("#A663CC"))
 
         self.__text_handler(mouse_pos, texts, states, rect)
-        
+
     def __about(self, mouse_pos):
         texts = ["RENDERING A PSEUDO 3D PRO-", 
                  "-JECTION BASED ON A 2D MAP", 
@@ -274,7 +274,7 @@ class Options():
         self.__font.render(self.__unscaled, "SENSITIVTY", pygame.Vector2(120, 85), pygame.Color("#A663CC"))
         
         self.__text_handler(mouse_pos, texts, states, rect, "sensitivityMultiplier", True)
-    
+
     def __fov(self, mouse_pos):
         texts = ["HFOV", "VFOV", "BACK"]
 
@@ -314,7 +314,7 @@ class Options():
         self.__font.render(self.__unscaled, "VFOV", pygame.Vector2(144, 85), pygame.Color("#A663CC"))
         
         self.__text_handler(mouse_pos, texts, states, rect, "vfov", False)
-        
+
     def __player_speed(self, mouse_pos):
         texts = ["SLIDER", "BACK"]
 
@@ -411,7 +411,6 @@ class Options():
         self.__font.render(self.__unscaled, "SECTOR", pygame.Vector2(136, 85), pygame.Color("#A663CC"))
 
         self.__text_handler(mouse_pos, texts, states, rect, "sectorLightMode")
-
 
     def __linear(self, mouse_pos):
         if not(SETTINGS["linearViewMode"]):

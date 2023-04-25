@@ -4,11 +4,11 @@
 import math
 import pygame
 
-# Clamp the value to the inclusive range of min and max.
+# Clamp the value to the inclusive range of min and max
 def clamp(value, min_value, max_value):
         return min(max(value, min_value), max_value)
-         
-# Transforms point a to be relative player
+
+# Translates point a to be relative player
 def translate(point, player):
     return pygame.Vector2(point.position.x - player.get_position().x, point.position.y - player.get_position().y)
 
@@ -95,7 +95,7 @@ def shade_by_angle(colour, start: pygame.Vector2, end):
             clamp(colour.b - distance, 0, 255))
 
 # Shade the wall/floor/ceiling based on the distance from the player
-def shade_by_wall(colour, point, start, end):
+def shade_per_wall(colour, point, start, end):
     average = (start + end) / 2
     distance = average.distance_to((point)) * 15
     return (clamp(colour.r - distance, 0, colour.r), 

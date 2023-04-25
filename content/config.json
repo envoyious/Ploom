@@ -7,7 +7,7 @@
     "menuColour": "#1B0F27",
     "letterbox": true,
     "framerate": 60,
-    "fixedTimeStep": false,
+    "fixedTimeStep": true,
     "hfov": 103,
     "hfovUpperBound": 130,
     "hfovLowerBound": 40, 

@@ -15,6 +15,7 @@ class Engine:
         self._window_width = 640
         self._window_height = 360
         self._caption = "Engine"
+        self._icon = None
         self._mouse_visible = True
         self._mouse_grab = False
         self._graphics = None
@@ -54,6 +55,9 @@ class Engine:
         pygame.event.set_grab(self._mouse_grab)
 
         self.load_content()
+        
+        if self._icon != None:
+            pygame.display.set_icon(self._icon)
 
         prev_time = time.time()
         delta_time = 0
