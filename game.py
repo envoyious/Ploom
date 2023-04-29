@@ -377,18 +377,19 @@ class Game(Scene):
                     # to be correct. To convert the calculated coordinates the viewing width/height - 1 (as pixels start from
                     # 0) is taken away by the x/y and the pixel is drawn at the resultant point
 
-                    sector_start = self.walls[sector.start_wall].position
-                    sector_end = self.walls[int(sector.start_wall + sector.num_walls / 2)].position
+                    points = []
+                    for wall in self.walls[sector.start_wall: sector.start_wall + sector.num_walls:]:
+                        points.append(wall.position)
 
                     # Draw the ceiling
                     if ceiling_y < y_top[x]:
 
                         if light_mode == 0:
-                            colour = shade_per_wall(pygame.Color("#98B8DC"), (self.__player.get_position().x, self.__player.get_position().y), sector_start, sector_end)
+                            colour = shade_per_plane(pygame.Color("#98B8DC"), (self.__player.get_position().x, self.__player.get_position().y), points)
                         elif light_mode == 1:
                             colour = shade_by_height(pygame.Color("#98B8DC"), -sector.ceiling + self.__player_height + 5)
                         else:
-                            colour = shade_per_wall(pygame.Color("#98B8DC"), (self.__player.get_position().x, self.__player.get_position().y), sector_start, sector_end)
+                            colour = shade_per_plane(pygame.Color("#98B8DC"), (self.__player.get_position().x, self.__player.get_position().y), points)
 
                         pygame.draw.line(self._target, colour, 
                                          (view_width - 1 - x, view_height - 1 - ceiling_y), 
@@ -399,11 +400,11 @@ class Game(Scene):
                     if floor_y > y_bottom[x]:
 
                         if light_mode == 0:
-                            colour = shade_per_wall(pygame.Color("#A663CC"), (self.__player.get_position().x, self.__player.get_position().y), sector_start, sector_end)
+                            colour = shade_per_plane(pygame.Color("#A663CC"), (self.__player.get_position().x, self.__player.get_position().y), points)
                         elif light_mode == 1:
                             colour = shade_by_height(pygame.Color("#A663CC"), sector.floor - self.__player_height)
                         else:
-                            colour = shade_per_wall(pygame.Color("#A663CC"), (self.__player.get_position().x, self.__player.get_position().y), sector_start, sector_end)
+                            colour = shade_per_plane(pygame.Color("#A663CC"), (self.__player.get_position().x, self.__player.get_position().y), points)
 
                         pygame.draw.line(self._target, colour, 
                                          (view_width - 1 - x, view_height - 1 - y_bottom[x]), 

@@ -94,13 +94,25 @@ def shade_by_angle(colour, start: pygame.Vector2, end):
             clamp(colour.g - distance, 0, 255),
             clamp(colour.b - distance, 0, 255))
 
-# Shade the wall/floor/ceiling based on the distance from the player
-def shade_per_wall(colour, point, start, end):
+# Shade the wall based on the distance from the player
+def shade_per_wall(colour, player, start, end):
     average = (start + end) / 2
-    distance = average.distance_to((point)) * 15
+    distance = average.distance_to(player) * 15
     return (clamp(colour.r - distance, 0, colour.r), 
             clamp(colour.g - distance, 0, colour.g),
             clamp(colour.b - distance, 0, colour.b))
+
+# Shade the wall based on the distance from the player
+def shade_per_plane(colour, player, points):
+    average = pygame.Vector2()
+    for point in points:
+        average += point
+    average /= len(points)
+    distance = average.distance_to(player) * 15
+    return (clamp(colour.r - distance, 0, colour.r), 
+            clamp(colour.g - distance, 0, colour.g),
+            clamp(colour.b - distance, 0, colour.b))
+
 
 # Shade floor/ceiling by height
 def shade_by_height(colour, height):
