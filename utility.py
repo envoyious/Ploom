@@ -102,7 +102,7 @@ def shade_per_wall(colour, player, start, end):
             clamp(colour.g - distance, 0, colour.g),
             clamp(colour.b - distance, 0, colour.b))
 
-# Shade the wall based on the distance from the player
+# Shade the floor/ceiling based on the distance of the centre of the sector from the player
 def shade_per_plane(colour, player, points):
     average = pygame.Vector2()
     for point in points:
