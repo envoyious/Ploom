@@ -6,7 +6,9 @@ Play the game on my [itch.io](https://envoye.itch.io/ploom) page!
 
 ##
 
-![](https://img.itch.zone/aW1nLzEzNDQwMDA2LnBuZw==/original/GQYo72.png)
+![](https://img.itch.zone/aW1hZ2UvMjI1OTIwMi8xMzQzOTgyOS5wbmc=/794x1000/tHnjTQ.png)
+
+![](https://img.itch.zone/aW1hZ2UvMjI1OTIwMi8xMzQzOTgwNS5wbmc=/794x1000/o31sWA.png)
 
 ## Building from source
 
